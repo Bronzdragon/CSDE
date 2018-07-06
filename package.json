@@ -1,0 +1,15 @@
+{
+  "name": "joint.js-test",
+  "version": "1.0.0",
+  "description": "A testing package for personal use only.",
+  "main": "app.js",
+  "dependencies": {
+    "appjs-win32": "^0.0.19"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Bronzdragon@gmail.com",
+  "license": "ISC"
+}

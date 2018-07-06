@@ -1,16 +1,9 @@
 /* jshint esversion: 6 */
 
-const http = require('http');
+const app = module.exports = require('appjs');
 
-const hostname = '127.0.0.1';
-const port = 3000;
-
-const server = http.createServer((req, res) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/pain');
-    res.end('Hello World\n');
-});
-
-server.listen(port, hostname, () => {
-    console.log(`Server running at http://${hostname}:${port}/`);
+var window = app.createWindow({
+	width	: 1280,
+	height : 720,
+	icons	: __dirname + '/content/icons'
 });

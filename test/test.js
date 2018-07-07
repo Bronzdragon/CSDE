@@ -1,10 +1,11 @@
 /* jshint esversion: 6 */
 
 const expect = require('chai').expect;
-const talkit = require('../csde.js');
+const csde = require('../csde.js');
 
 describe('talkit', () =>{
     it('exports a module.', () => {
-        expect(talkit).to.be.an('object');
+        let test = new csde();
+        expect(test).to.be.an('object');
     });
 });

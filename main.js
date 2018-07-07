@@ -2,6 +2,9 @@
 const {app, BrowserWindow} = require('electron');
 require('electron-debug')();
 
+//const csde = require('./csde.js');
+const joint = require('jointjs');
+
 let mainWindow;
 
 function createWindow() {
@@ -11,6 +14,8 @@ function createWindow() {
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
+
+    //let app = new csde();
 }
 
 app.on('ready', createWindow);

@@ -1,3 +1,6 @@
+#avatars (which are project specific)
+images/characters/*.*
+
 # Logs
 logs
 *.log

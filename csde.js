@@ -421,26 +421,42 @@ var csde = (function csdeMaster(){
     }
 
     //TODO: Insert under mouse instead.
-    function _addNodeToGraph(container, nodeType, location) {
-        return () => {
-            var element = new nodeType ({
-                position: {x: location.x, y: location.y}
-            });
-            _graph.addCell(element);
-        };
+    function _addNodeToGraph(nodeType, location) {
+        var element = new nodeType ({
+            position: {x: location.x, y: location.y}
+        });
+        _graph.addCell(element);
     }
 
     function _addContextMenu(element) {
-        console.log("Adding context menu!");
+        function _nodeConstructor(nodeType) {
+            return () => {
+                _addNodeToGraph(nodeType, {x: 20, y: 200});
+            };
+        }
 
         $.contextMenu({
             selector: 'div#paper',
             callback: function (key, options) {
-                var m = "clicked: " + key + " on " + $(this).text();
-                console.log(m);// || alert(m);
+                console.log("TODO, make this option.");
             }, items: {
-                'text': {name: 'Text'},
-                'choice': {name: 'Choice'}
+                //separator: { "type": "cm_separator" },
+                'text': {name: 'Speech', callback: _nodeConstructor(joint.shapes.dialogue.Text)},
+                'choice': {name: 'Choice', callback: _nodeConstructor(joint.shapes.dialogue.Choice)},
+                'set': {name: 'Set flag', callback: _nodeConstructor(joint.shapes.dialogue.Set)},
+                'branch': {name: 'Conditional branch', callback: _nodeConstructor(joint.shapes.dialogue.Branch)},
+                'data': {
+                    name: 'Data management',
+                    items: {
+                        'import': {name: "Import from file"},
+                        'export-csde': {name: "Export (CSDE format)"},
+                        'export-uvnp': {name: "Export (UVNP format)"},
+                        'save': {name: "Manual Save"},
+                        'load': {name: "Manual Load"},
+                        'new': {name: 'Open blank file'}
+                    }
+                },
+                //separator2: { "type": "cm_separator" }
             }
         });
             /*width: 150,

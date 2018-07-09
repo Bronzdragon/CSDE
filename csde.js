@@ -1,6 +1,6 @@
 /* jshint esversion: 6 */
 
-
+var test;
 
 var csde = (function csdeMaster(){
 
@@ -424,28 +424,48 @@ var csde = (function csdeMaster(){
     //TODO: Insert under mouse instead.
     function _addNodeToGraph(nodeType, location) {
         var element = new nodeType ({
-            position: {x: location.x, y: location.y}
+            position: location
         });
         _graph.addCell(element);
     }
 
     function _addContextMenu(element) {
-        function _nodeConstructor(nodeType) {
-            return () => {
-                _addNodeToGraph(nodeType, {x: 20, y: 200});
-            };
-        }
 
         $.contextMenu({
             selector: 'div#paper',
-            callback: function (key, options) {
-                console.log("TODO, make this option.");
+            callback: function (itemKey, opt, rootMenu, originalEvent) {
+                let pos = {
+                    x: Math.round(opt.$menu.position().left + element.scrollLeft()),
+                    y: Math.round(opt.$menu.position().top +  element.scrollTop())
+                };
+
+                let type = null;
+                switch (itemKey) {
+                    case 'text':
+                        type = joint.shapes.dialogue.Text;
+                        break;
+                    case 'choice':
+                        type = joint.shapes.dialogue.Choice;
+                        break;
+                    case 'set':
+                        type = joint.shapes.dialogue.Set;
+                        break;
+                    case 'branch':
+                        type = joint.shapes.dialogue.Branch;
+                        break;
+                    default:
+                        console.log(TODO);
+                        return;
+                }
+                console.log(pos);
+                _addNodeToGraph(type, pos);
+
             }, items: {
                 //separator: { "type": "cm_separator" },
-                'text': {name: 'Speech', callback: _nodeConstructor(joint.shapes.dialogue.Text)},
-                'choice': {name: 'Choice', callback: _nodeConstructor(joint.shapes.dialogue.Choice)},
-                'set': {name: 'Set flag', callback: _nodeConstructor(joint.shapes.dialogue.Set)},
-                'branch': {name: 'Conditional branch', callback: _nodeConstructor(joint.shapes.dialogue.Branch)},
+                'text': {name: 'Speech'},
+                'choice': {name: 'Choice'},
+                'set': {name: 'Set flag'},
+                'branch': {name: 'Conditional branch'},
                 'data': {
                     name: 'Data management',
                     items: {
@@ -509,12 +529,9 @@ var csde = (function csdeMaster(){
             snapLinks: { radius: 75 }
         });
 
-        _addContextMenu(_$container.$paper);
+        _addContextMenu(_$container);
 
         _registerPanning(paper, _$container);
-
-        console.log(_mouseObj.position);
-
     }
 
     function addCharacter(newCharacter, list){

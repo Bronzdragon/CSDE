@@ -7,6 +7,7 @@ var csde = (function csdeMaster(){
     let _$container = null;
     let _graph = null;
     let _characters = resetCharacters();
+    let _mouseObj = {};
 
     const allowableConnections = [
     	['dialogue.Text', 'dialogue.Text'],
@@ -459,26 +460,32 @@ var csde = (function csdeMaster(){
                 //separator2: { "type": "cm_separator" }
             }
         });
-            /*width: 150,
-            items: [
-                { text: 'Text', alias: '1-1', action: _addNodeToGraph(joint.shapes.dialogue.Text, {x: 200, y: 20}) },
-                { text: 'Choice', alias: '1-2', action: _addNodeToGraph(joint.shapes.dialogue.Choice, {x: 200, y: 20}) },
-                { text: 'Branch', alias: '1-3', action: _addNodeToGraph(joint.shapes.dialogue.Branch, {x: 200, y: 20}) },
-                { text: 'Set', alias: '1-4', action: _addNodeToGraph(joint.shapes.dialogue.Set, {x: 200, y: 20}) },
-                *//*{ type: 'splitLine' },
-                { text: 'Save', alias: '2-1', action: alert("TODO") },
-                { text: 'Load', alias: '2-2', action: alert("TODO") },
-                { text: 'Import', id: 'import', alias: '2-3', action: alert("TODO") },
-                { text: 'New', alias: '2-4', action: alert("TODO") },
-                { text: 'Export', id: 'export', alias: '2-5', action: alert("TODO") },
-                { text: 'Export game file', id: 'export-game', alias: '2-6', action: alert("TODO") },
-            ]*/
-
     }
 
     // TODO: Write this function.
-    function _registerPanning(element) {
+    function _registerPanning(paper, element) {
+        _mouseObj.panning = false;
+        _mouseObj.position = { x: 0, y: 0 };
 
+        paper.on('blank:pointerdown', (event, x, y) =>{
+            _mouseObj.panning = true;
+            _mouseObj.position = {x: event.pageX, y: event.pageY};
+            $('body').css('cursor', 'move');
+        });
+
+        element.mousemove(event => {
+            if (!_mouseObj.panning) return;
+
+            element.scrollLeft(element.scrollLeft() + _mouseObj.position.x - event.pageX);
+            element.scrollTop(element.scrollTop()   + _mouseObj.position.y - event.pageY);
+
+            _mouseObj.position = {x: event.pageX, y: event.pageY};
+        });
+
+        element.mouseup(event => {
+            _mouseObj.panning = false;
+            $('body').css('cursor', 'default');
+        });
     }
 
     function initialize(baseElement) {
@@ -503,6 +510,10 @@ var csde = (function csdeMaster(){
         });
 
         _addContextMenu(_$container.$paper);
+
+        _registerPanning(paper, _$container);
+
+        console.log(_mouseObj.position);
 
     }
 

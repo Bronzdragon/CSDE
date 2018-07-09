@@ -1,7 +1,7 @@
 html, body {
 	padding: 0px;
-	color: #fff;
 	margin: 0px;
+	color: #fff;
 	font-family: sans-serif;
 	font-size: small;
 	background: #7d8ea2; /* Old browsers */
@@ -16,7 +16,9 @@ html, body {
 }
 
 #container {
-	overflow: scroll;
+	overflow: scroll; /*Change to auto to remove scrollbars*/
+	width:100vw;
+	height:100vh;
 }
 
 #paper {
@@ -30,30 +32,8 @@ html, body {
 	background: transparent;
 }
 
-#paper svg .link
-{
+#paper svg .link {
 	z-index: 2;
-}
-
-#menu {
-	position: absolute;
-	display: none;
-	width: 40%;
-	z-index: 10000;
-	padding: 8px;
-	cursor: pointer;
-}
-
-#menu div {
-	clear: right;
-	padding: 4px;
-	margin-left: 20px;
-	margin-right: 20px;
-	border-bottom: 1px solid #ccc;
-}
-
-#menu div:hover {
-	background-color: black;
 }
 
 #flash {
@@ -196,42 +176,4 @@ button.delete:hover {
 
 .node {
 	color: #fff;
-}
-
-/* Context menu */
-.b-m-mpanel, #menu, #flash {
-	background-color: #444;
-	position: absolute;
-	z-index: 99997;
-	-moz-box-shadow: 0px 0px 16px 0px rgba(0, 0, 0, 0.5);
-	-webkit-box-shadow: 0px 0px 16px 0px rgba(0, 0, 0, 0.5);
-	box-shadow: 0px 0px 16px 0px rgba(0, 0, 0, 0.5);
-}
-
-.b-m-split {
-	font-size: 0px;
-	margin: 2px;
-	border-bottom: 1px solid #777;
-}
-
-.b-m-item, .b-m-ifocus {
-    padding: 8px;
-    line-height: 100%;
-}
-
-span {
-    -moz-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    cursor: default;
-}
-
-.b-m-ibody {
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.b-m-ifocus {
-    background-color: #000;
 }

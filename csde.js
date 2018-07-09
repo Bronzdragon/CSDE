@@ -117,7 +117,7 @@ var csde = (function csdeMaster(){
             size: { width: 450, height: 200 },
             textarea: 'Start writing',
             actor: '', // Value to be set later.
-            text: '',  // Value to be set later.
+            speech: '',  // Value to be set later.
         },
         joint.shapes.dialogue.Base.prototype.defaults)
     });
@@ -146,7 +146,7 @@ var csde = (function csdeMaster(){
                 this.$box.$character_select.append($character_option);
             }
 
-            this.$box.$speech.change(event => {
+            this.$box.$speech.on('input propertychange', event => {
                 this.model.set('speech', $(event.target).val());
             });
 
@@ -199,6 +199,8 @@ var csde = (function csdeMaster(){
         },
 
         updateBox: function() {
+            console.log(this.model);
+
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
             let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
@@ -263,118 +265,190 @@ var csde = (function csdeMaster(){
 
     });
 
-    // TODO: Go over internal functions, optimize/correct them.
+    // TODO: Create multiple choices.
+    joint.shapes.dialogue.Choice     = joint.shapes.dialogue.Base.extend({
+        defaults: joint.util.deepSupplement({
+            //size: { width: 250, height: 135 },
+            type: 'dialogue.Choice',
+            /*inPorts: ['input'],
+            outPorts: ['output'],*/
+        },
+        joint.shapes.dialogue.Base.prototype.defaults),
+    });
+    joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.BaseView.extend({
+        template:
+        '<div class="node">' +
+        '<button class="delete">x</button>' +
+        'TODO: Make choice node' +
+        '</div>',
+    });
+
+    // TODO: Figure out why the model isn't unique
     joint.shapes.dialogue.Branch     = joint.shapes.dialogue.Base.extend({
         defaults: joint.util.deepSupplement({
             type: 'dialogue.Branch',
-            //size: { width: 200, height: 100, },
-            values: []
+            varName: '',
+            values: null
         }, joint.shapes.dialogue.Base.prototype.defaults)
     });
     joint.shapes.dialogue.BranchView = joint.shapes.dialogue.BaseView.extend({
         template:
         '<div class="node">' +
-        '<span class="label"></span>' +
-        '<button class="delete">x</button>' +
-        '<button class="add">+</button>' +
-        '<button class="remove">-</button>' +
-        '<input type="text" class="name" placeholder="Variable" />' +
-        '<input type="text" value="Default" readonly/>' +
+            '<button class="delete">x</button>' +
+            '<div class="portContainer">' +
+                '<input type="text" class="varName" placeholder="Variable" />'+
+            '</div>' +
+            '<button class="add">+</button>' +
         '</div>',
 
-        initialize: function() {
+        portTemplate:
+        '<div id="<%= TemplateId %>">' +
+            '<button class="delete">-</button>' +
+            '<input type="text" class="value" value="<%= templateValue %>">' +
+        '</div>',
+
+        initialize: function () {
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
 
-            this.$box.$add = this.$box.find('button.add');
-            this.$box.$remove = this.$box.find('button.remove');
+            this.model.set('values', new Map());
+
+            Object.assign(this.$box, {
+                $portContainer: this.$box.find('div.portContainer'),
+                $varName: this.$box.find('input.varName'),
+                $add: this.$box.find('button.add')
+            });
+
+            this.$box.$varName.on('input propertychange', event => {
+                this.model.set('varName', $(event.target).val());
+            });
 
             this.$box.$add.click(() => this.addPort());
-            this.$box.$remove.click(() => this.removePort());
+
+            this.addPort("Default");
+            this.addPort();
         },
 
-        removePort: function() {
-            if (this.model.get('outPorts').length > 1) {
-                var outPorts = this.model.get('outPorts').slice(0);
-                outPorts.pop();
-                this.model.set('outPorts', outPorts);
-                var values = this.model.get('values').slice(0);
-                values.pop();
-                this.model.set('values', values);
-                this.updateSize();
-            }
-        },
+        addPort: function(defaultValue = null) {
+            let values = null;
+            values = this.model.get('values');
 
-        addPort: function() {
-            var outPorts = this.model.get('outPorts').slice(0);
-            outPorts.push('output' + outPorts.length.toString());
-            this.model.set('outPorts', outPorts);
-            var values = this.model.get('values').slice(0);
-            values.push(null);
+            values.set(_generateId(), defaultValue);
             this.model.set('values', values);
-            this.updateSize();
+            this.updateBox();
         },
+
 
         updateBox: function() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
-            var values = this.model.get('values');
-            var valueFields = this.$box.find('input.value');
+            for (let [id, value] of this.model.get('values')){
+                if (this.$box.$portContainer.find('#' + id).length > 0) {
+                    this.$box.$portContainer.find('#' + id).val(value);
+                } else {
+                    let $newChoice = $(_.template(this.portTemplate)({TemplateId: id, templateValue: value}));
 
-            // Add value fields if necessary
-            for (var i = valueFields.length; i < values.length; i++) {
-                /*jshint loopfunc: true */
-                // Prevent paper from handling pointerdown.
-                var field = $('<input type="text" class="value" />');
-                field.attr('placeholder', 'Value ' + (i + 1).toString());
-                field.attr('index', i);
-                this.$box.append(field);
-                field.on('mousedown click', evt => { evt.stopPropagation(); });
+                    Object.assign($newChoice, {
+                        $deleteButton: $newChoice.find('button.delete'),
+                        $value:  $newChoice.find('input.value')
+                    });
 
-                // This is an example of reacting on the input change and storing the input data in the cell model.
-                field.on('change', evt => {
-                    var values = this.model.get('values').slice(0);
-                    values[$(evt.target).attr('index')] = $(evt.target).val();
-                    this.model.set('values', values);
-                });
+                    $newChoice.$value.on('input propertychange', event => {
+                        let values = this.model.get('values');
+
+                        values.set($newChoice.attr('id'), $(event.target).val());
+                        this.model.set('values', values);
+                    });
+
+                    $newChoice.$deleteButton.click(event => {
+
+                    });
+
+
+                    this.$box.$portContainer.append($newChoice); //Generate a new one.
+                }
             }
 
-            // Remove value fields if necessary
-            for (let i = values.length; i < valueFields.length; i++)
-            $(valueFields[i]).remove();
+            // console.log(values);
+            /*for (let value of values) {
+                let $parentElement = $('<div>');
 
-            // Update value fields
-            valueFields = this.$box.find('input.value');
-            for (let i = 0; i < valueFields.length; i++) {
-                let field = $(valueFields[i]);
-                if (!field.is(':focus'))
-                field.val(values[i]);
-            }
+                $parentElement.$button = $('<button>')
+                    .attr({class: 'delete'})
+                    .text('-')
+                    //.click(event => $parentElement.remove())
+                    .appendTo($parentElement);
+
+                $parentElement.$input = $('<input>')
+                    .attr({ type: 'text', class: 'value'})
+                    .val(value)
+                    .appendTo($parentElement);
+
+                //.appendTo(this.$box.$portContainer);
+                this.$box.$portContainer.append($parentElement);
+                // console.log($parentElement);
+            }*/
         },
+            // var valueFields = this.$box.find('input.value');
+            //
+            // // Add value fields if necessary
+            // for (var i = valueFields.length; i < values.length; i++) {
+            //     /*jshint loopfunc: true */
+            //     // Prevent paper from handling pointerdown.
+            //     var field = $('<input type="text" class="value" />');
+            //     field.attr('placeholder', 'Value ' + (i + 1).toString());
+            //     field.attr('index', i);
+            //     this.$box.append(field);
+            //     field.on('mousedown click', evt => { evt.stopPropagation(); });
+            //
+            //     // This is an example of reacting on the input change and storing the input data in the cell model.
+            //     field.on('change', evt => {
+            //         var values = this.model.get('values').slice(0);
+            //         values[$(evt.target).attr('index')] = $(evt.target).val();
+            //         this.model.set('values', values);
+            //     });
+            // }
+            //
+            // // Remove value fields if necessary
+            // for (let i = values.length; i < valueFields.length; i++)
+            // $(valueFields[i]).remove();
+            //
+            // // Update value fields
+            // valueFields = this.$box.find('input.value');
+            // for (let i = 0; i < valueFields.length; i++) {
+            //     let field = $(valueFields[i]);
+            //     if (!field.is(':focus'))
+            //     field.val(values[i]);
+            // }
+        //},
 
-        updateSize: function() {
+        /*updateSize: function() {
             var textField = this.$box.find('input.name');
             var height = textField.outerHeight(true);
             this.model.set('size', { width: 200, height: 100 + Math.max(0, (this.model.get('outPorts').length - 1) * height) });
-        },
+        },*/
+
+        // removePort: function() {
+        //     if (this.model.get('outPorts').length > 1) {
+        //         var outPorts = this.model.get('outPorts').slice(0);
+        //         outPorts.pop();
+        //         this.model.set('outPorts', outPorts);
+        //         var values = this.model.get('values').slice(0);
+        //         values.pop();
+        //         this.model.set('values', values);
+        //         this.updateSize();
+        //     }
+        // },
+
     });
 
-    // TODO: Create multiple choices.
-    joint.shapes.dialogue.Choice     = joint.shapes.dialogue.Base.extend({
-    	defaults: joint.util.deepSupplement({
-    		    //size: { width: 250, height: 135 },
-    			type: 'dialogue.Choice',
-    			/*inPorts: ['input'],
-    			outPorts: ['output'],*/
-    		},
-    		joint.shapes.dialogue.Base.prototype.defaults
-    	),
-    });
-    joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.BaseView.extend({
-        template:
-    	'<div class="node">' +
-        	'<button class="delete">x</button>' +
-            'TODO: Make choice node' +
-    	'</div>',
-    });
+
+    function _generateId(length = 16, prefix = "id_"){
+        if (!(Number.isInteger(length = Number(length)) || length < 1)){ return null; }
+        let seed = "";
+        do{
+            seed += Math.random().toString(32).slice(2);
+        } while  (seed.length < length);
+        return prefix + seed.slice(0, length);
+    }
 
     function _validateConnection(cellViewSource, magnetSource, cellViewTarget, magnetTarget, end, linkView) {
     	// Prevent linking to itself.
@@ -421,16 +495,11 @@ var csde = (function csdeMaster(){
         return character.hasOwnProperty('name') && character.hasOwnProperty('url');
     }
 
-    //TODO: Insert under mouse instead.
     function _addNodeToGraph(nodeType, location) {
-        var element = new nodeType ({
-            position: location
-        });
-        _graph.addCell(element);
+        _graph.addCell(new nodeType ({ position: location }));
     }
 
     function _addContextMenu(element) {
-
         $.contextMenu({
             selector: 'div#paper',
             callback: function (itemKey, opt, rootMenu, originalEvent) {
@@ -457,7 +526,6 @@ var csde = (function csdeMaster(){
                         console.log(TODO);
                         return;
                 }
-                console.log(pos);
                 _addNodeToGraph(type, pos);
 
             }, items: {
@@ -482,7 +550,6 @@ var csde = (function csdeMaster(){
         });
     }
 
-    // TODO: Write this function.
     function _registerPanning(paper, element) {
         _mouseObj.panning = false;
         _mouseObj.position = { x: 0, y: 0 };

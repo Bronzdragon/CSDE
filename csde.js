@@ -1,12 +1,12 @@
 /* jshint esversion: 6 */
 
-if (typeof require !== 'undefined' && require !== null) {
-    joint = require('jointjs');
-    $ = require('jquery');
-}
+
 
 var csde = (function csdeMaster(){
-    let CHARACTERS = [];
+
+    let _$container = null;
+    let _graph = null;
+    let _characters = resetCharacters();
 
     const allowableConnections = [
     	['dialogue.Text', 'dialogue.Text'],
@@ -33,7 +33,7 @@ var csde = (function csdeMaster(){
     	['dialogue.Branch', 'dialogue.Branch'],
     ];
 
-    const defaultLink = new joint.dia.Link({
+    const _defaultLink = new joint.dia.Link({
     	attrs: {
     		'.marker-target': { d: 'M 10 0 L 0 5 L 10 10 z', },
     		'.link-tools .tool-remove circle, .marker-vertex': { r: 8 },
@@ -137,7 +137,7 @@ var csde = (function csdeMaster(){
             this.$box.$speech = this.$box.find('textarea.speech');
 
             // Generate list of character options
-            for (let character of CHARACTERS) {
+            for (let character of _characters) {
                 let $character_option = $(document.createElement("option"))
                     .attr('value', character.name)
                     .text(character.name);
@@ -162,11 +162,11 @@ var csde = (function csdeMaster(){
                 let bounding_box = this.model.getBBox();
                 let new_box = new joint.shapes.dialogue.Text({position: {x: bounding_box.x , y: bounding_box.y + bounding_box.height + 20}});
 
-                let new_link = defaultLink.clone();
+                let new_link = _defaultLink.clone();
                 new_link.set('source', { id: this.model.id, port: 'output' });
                 new_link.set('target', { id: new_box.id, port: 'input' });
 
-                graph.addCells([new_box, new_link]);
+                _graph.addCells([new_box, new_link]);
                 new_box.trigger('focus');
 
                 event.preventDefault();
@@ -176,7 +176,7 @@ var csde = (function csdeMaster(){
                 // Using keydown instead of keypress, because it doesn't work correctly in Google Chrome
                 if (!event.altKey) return;
 
-                let options = CHARACTERS.map(element => element.name);
+                let options = _characters.map(element => element.name);
 
                 //this.$box.$character_select; // Our dropdown menu.
                 let offset = this.$box.$character_select.prop('selectedIndex') + 1;
@@ -200,8 +200,8 @@ var csde = (function csdeMaster(){
         updateBox: function() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
-            let selectedChar = CHARACTERS.find(element => element.name === this.model.get('actor'));
-            if (!selectedChar) { selectedChar = CHARACTERS.find(element => element.name === 'unknown'); }
+            let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
+            if (!selectedChar) { selectedChar = _characters.find(element => element.name === 'unknown'); }
 
             this.$box.$img.attr({
                 'src': `images\\characters\\${selectedChar.url}`,
@@ -397,14 +397,14 @@ var csde = (function csdeMaster(){
     	// If unlimited connections attribute is null, we can only ever connect to one object
     	// If it is not null, it is an array of type strings which are allowed to have unlimited connections
     	let unlimitedConnections = magnet.getAttribute('unlimitedConnections');
-    	let links = graph.getConnectedLinks(cellView.model);
+    	let links = _graph.getConnectedLinks(cellView.model);
 
 
         for (let link of links) {
             if (link.attributes.source.id === cellView.model.id && link.attributes.source.port === magnet.attributes.port.nodeValue) {
                 // This port already has a connection
                 if (unlimitedConnections && link.attributes.target.id) {
-                    let targetCell = graph.getCell(link.attributes.target.id);
+                    let targetCell = _graph.getCell(link.attributes.target.id);
 
                     // It's okay because this target type has unlimited connections
                     return unlimitedConnections.contains(targetCell.attributes.type);
@@ -416,50 +416,106 @@ var csde = (function csdeMaster(){
         return true;
     }
 
-    function initialize(baseElement) {
-
-        if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
-
-        if (!CHARACTERS.some(character => character.name = 'unknown')) {
-            addCharacters([{name: 'unknown', url: 'unknown.png'}]);
-        }
-
-        let graph = new joint.dia.Graph();
-
-        let paper = new joint.dia.Paper({
-            el: $('#paper'),
-            model: graph,
-            width: 16000,
-            height: 8000,
-            gridSize: 16,
-            defaultLink: defaultLink,
-            validateConnection: _validateConnection,
-            validateMagnet: _validateMagnet,
-            snapLinks: { radius: 75 }
-        });
-    }
-
     function _checkCharacter(character){
         return character.hasOwnProperty('name') && character.hasOwnProperty('url');
     }
 
-    function addCharacter(newCharacter){
+    //TODO: Insert under mouse instead.
+    function _addNodeToGraph(container, nodeType, location) {
+        return () => {
+            var element = new nodeType ({
+                position: {x: location.x, y: location.y}
+            });
+            _graph.addCell(element);
+        };
+    }
+
+    function _addContextMenu(element) {
+        console.log("Adding context menu!");
+
+        $.contextMenu({
+            selector: 'div#paper',
+            callback: function (key, options) {
+                var m = "clicked: " + key + " on " + $(this).text();
+                console.log(m);// || alert(m);
+            }, items: {
+                'text': {name: 'Text'},
+                'choice': {name: 'Choice'}
+            }
+        });
+            /*width: 150,
+            items: [
+                { text: 'Text', alias: '1-1', action: _addNodeToGraph(joint.shapes.dialogue.Text, {x: 200, y: 20}) },
+                { text: 'Choice', alias: '1-2', action: _addNodeToGraph(joint.shapes.dialogue.Choice, {x: 200, y: 20}) },
+                { text: 'Branch', alias: '1-3', action: _addNodeToGraph(joint.shapes.dialogue.Branch, {x: 200, y: 20}) },
+                { text: 'Set', alias: '1-4', action: _addNodeToGraph(joint.shapes.dialogue.Set, {x: 200, y: 20}) },
+                *//*{ type: 'splitLine' },
+                { text: 'Save', alias: '2-1', action: alert("TODO") },
+                { text: 'Load', alias: '2-2', action: alert("TODO") },
+                { text: 'Import', id: 'import', alias: '2-3', action: alert("TODO") },
+                { text: 'New', alias: '2-4', action: alert("TODO") },
+                { text: 'Export', id: 'export', alias: '2-5', action: alert("TODO") },
+                { text: 'Export game file', id: 'export-game', alias: '2-6', action: alert("TODO") },
+            ]*/
+
+    }
+
+    // TODO: Write this function.
+    function _registerPanning(element) {
+
+    }
+
+    function initialize(baseElement) {
+
+        if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
+        _$container = baseElement;
+        _$container.$paper = baseElement.find('div#paper');
+
+        _graph = new joint.dia.Graph();
+        let paper = new joint.dia.Paper({
+            el: _$container.$paper,
+            model: _graph,
+            width: 16000,
+            height: 8000,
+            gridSize: 16,
+            preventContextMenu: false,
+            // drawGrid: {name: 'doubleMesh', thickness: 0.8},
+            defaultLink: _defaultLink,
+            validateConnection: _validateConnection,
+            validateMagnet: _validateMagnet,
+            snapLinks: { radius: 75 }
+        });
+
+        _addContextMenu(_$container.$paper);
+
+    }
+
+    function addCharacter(newCharacter, list){
         if (!_checkCharacter(newCharacter)) {
             throw new TypeError("The character be an object with a name and url key.");
         }
-        CHARACTERS.push(newCharacter);
+        list.push(newCharacter);
+
+        return list;
     }
 
-    function addCharacters(newCharacters) {
-        if (!Array.isArray(newCharacters) || !newCharacters.every(character => _checkCharacter(character))) {
+    function addCharacters(newCharacters, list) {
+        if (!Array.isArray(newCharacters) || !newCharacters.every(_checkCharacter)) {
             throw new TypeError("The character list must be an array of objects, with each object having a name and url key.");
         }
-        CHARACTERS = CHARACTERS.concat(newCharacters);
+        list = list.concat(newCharacters);
+        return list;
+    }
+
+    function resetCharacters(){
+        list = [];
+        return addCharacter({name: 'unknown', url: 'unknown.png'}, list);
     }
 
     return {
-        addCharacter: addCharacter,
-        addCharacters: addCharacters,
+        addCharacter: character => _characters = addCharacter(character, _characters),
+        addCharacters: characters => _characters = addCharacters(characters, _characters),
+        clearCharacters: () => _characters = resetCharacters(),
         start: initialize
         /*Short name: long name */
     };

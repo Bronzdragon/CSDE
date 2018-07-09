@@ -2,10 +2,7 @@
 const {app, BrowserWindow} = require('electron');
 require('electron-debug')();
 
-//const csde = require('./csde.js');
-const joint = require('jointjs');
-
-let mainWindow;
+let mainWindow = null;
 
 function createWindow() {
     mainWindow = new BrowserWindow({ width: 800, height: 600});

@@ -1,7 +1,5 @@
 /* jshint esversion: 6 */
 
-var test;
-
 var csde = (function csdeMaster(){
 
     let _$container = null;
@@ -9,30 +7,7 @@ var csde = (function csdeMaster(){
     let _characters = resetCharacters();
     let _mouseObj = {};
 
-    const allowableConnections = [
-    	['dialogue.Text', 'dialogue.Text'],
-    	['dialogue.Text', 'dialogue.Node'],
-    	['dialogue.Text', 'dialogue.Choice'],
-    	['dialogue.Text', 'dialogue.Set'],
-    	['dialogue.Text', 'dialogue.Branch'],
-    	['dialogue.Node', 'dialogue.Text'],
-    	['dialogue.Node', 'dialogue.Node'],
-    	['dialogue.Node', 'dialogue.Choice'],
-    	['dialogue.Node', 'dialogue.Set'],
-    	['dialogue.Node', 'dialogue.Branch'],
-    	['dialogue.Choice', 'dialogue.Text'],
-    	['dialogue.Choice', 'dialogue.Node'],
-    	['dialogue.Choice', 'dialogue.Set'],
-    	['dialogue.Choice', 'dialogue.Branch'],
-    	['dialogue.Set', 'dialogue.Text'],
-    	['dialogue.Set', 'dialogue.Node'],
-    	['dialogue.Set', 'dialogue.Set'],
-    	['dialogue.Set', 'dialogue.Branch'],
-    	['dialogue.Branch', 'dialogue.Text'],
-    	['dialogue.Branch', 'dialogue.Node'],
-    	['dialogue.Branch', 'dialogue.Set'],
-    	['dialogue.Branch', 'dialogue.Branch'],
-    ];
+
 
     const _defaultLink = new joint.dia.Link({
     	attrs: {
@@ -40,7 +15,7 @@ var csde = (function csdeMaster(){
     		'.link-tools .tool-remove circle, .marker-vertex': { r: 8 },
 
     	},
-    }).set('smooth', true);
+    }).connector('smooth');
 
     // Register new models and views
     joint.shapes.dialogue = {};
@@ -109,6 +84,103 @@ var csde = (function csdeMaster(){
         },
 
         removeBox: function(event) { this.$box.remove(); }
+    });
+
+    joint.shapes.dialogue.Multi     = joint.shapes.dialogue.Base.extend({
+        defaults: joint.util.deepSupplement({
+            type: 'dialogue.Multi',
+            values: null
+        }, joint.shapes.dialogue.Base.prototype.defaults)
+    });
+    joint.shapes.dialogue.MultiView = joint.shapes.dialogue.BaseView.extend({
+        template:
+        '<div class="node">' +
+            '<button class="delete">x</button>' +
+            '<div class="choiceContainer"></div>' +
+            '<button class="add">+</button>' +
+        '</div>',
+
+        choiceTemplate:
+        '<div id="<%= TemplateId %>">' +
+            '<button class="delete">-</button>' +
+            '<input type="text" class="value" value="<%= templateValue %>">' +
+        '</div>',
+
+        initialize: function() {
+            this.model.set('values', new Map());
+            joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
+
+            this.$box.$choiceContainer = this.$box.find('div.choiceContainer');
+
+            this.$box.$add = this.$box.find('button.add');
+            this.$box.$add.click(() => this.addPort());
+        },
+
+        updateBox: function() {
+            joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
+            let values = this.model.get('values');
+
+            for (let [id, value] of values) {
+                let $choiceElement = this.$box.$choiceContainer.find('#' + id);
+
+                if ($choiceElement.length > 0) { // If it has an associated element
+                    $choiceElement.val(value);
+                } else {
+                    // There is a value, but no element to go along with it!
+                    this.$box.$choiceContainer.append(this.createElement(id, value));
+                }
+            }
+
+            for (let element of this.$box.$choiceContainer.children()) {
+                if (!values.has($(element).attr('id'))) {
+                    $(element).remove();
+                }
+            }
+
+            this.updateSize();
+        },
+
+        createElement: function(id, value = null) {
+            let $newChoice = $(_.template(this.choiceTemplate)({
+                TemplateId: id,
+                templateValue: value
+            }));
+
+            $newChoice.$value = $newChoice.find('input.value');
+            $newChoice.$deleteButton = $newChoice.find('button.delete');
+
+            $newChoice.$value.on('input propertychange', event => {
+                let values = this.model.get('values');
+                values.set($newChoice.attr('id'), $(event.target).val());
+                this.model.set('values', values);
+            });
+
+            $newChoice.$deleteButton.click(event => {
+                this.model.get('values');
+                let values = this.model.get('values');
+                values.delete($newChoice.attr('id'));
+                this.model.set('values', values);
+                this.updateBox();
+                console.log("Values before removal", this.model.get('values'));
+            });
+
+            return $newChoice;
+        },
+
+        addPort: function(defaultValue = null) {
+            let values = this.model.get('values');
+
+            values.set(_generateId(), defaultValue);
+            this.model.set('values', values);
+            this.updateBox();
+        },
+
+        updateSize: function() {
+            this.model.set('size', {
+                width: this.model.get('size').width,
+                height: 70 + this.$box.$choiceContainer.outerHeight(true)
+            });
+        }
     });
 
     joint.shapes.dialogue.Text     = joint.shapes.dialogue.Base.extend({
@@ -199,8 +271,6 @@ var csde = (function csdeMaster(){
         },
 
         updateBox: function() {
-            console.log(this.model);
-
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
             let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
@@ -215,7 +285,6 @@ var csde = (function csdeMaster(){
             this.$box.$character_select.val(selectedChar.name);
             this.$box.$speech.val(this.model.get('speech'));
         }
-
     });
 
     joint.shapes.dialogue.Set     = joint.shapes.dialogue.Base.extend({
@@ -265,179 +334,43 @@ var csde = (function csdeMaster(){
 
     });
 
-    // TODO: Create multiple choices.
-    joint.shapes.dialogue.Choice     = joint.shapes.dialogue.Base.extend({
+    joint.shapes.dialogue.Choice     = joint.shapes.dialogue.Multi.extend({
         defaults: joint.util.deepSupplement({
-            //size: { width: 250, height: 135 },
             type: 'dialogue.Choice',
-            /*inPorts: ['input'],
-            outPorts: ['output'],*/
         },
         joint.shapes.dialogue.Base.prototype.defaults),
     });
-    joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.BaseView.extend({
-        template:
-        '<div class="node">' +
-        '<button class="delete">x</button>' +
-        'TODO: Make choice node' +
-        '</div>',
+    joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.MultiView.extend({
+        initialize: function() {
+            joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
+            this.addPort();
+        }
     });
 
-    // TODO: Figure out why the model isn't unique
-    joint.shapes.dialogue.Branch     = joint.shapes.dialogue.Base.extend({
+    joint.shapes.dialogue.Branch     = joint.shapes.dialogue.Multi.extend({
         defaults: joint.util.deepSupplement({
             type: 'dialogue.Branch',
-            varName: '',
-            values: null
+            varName: null,
         }, joint.shapes.dialogue.Base.prototype.defaults)
     });
-    joint.shapes.dialogue.BranchView = joint.shapes.dialogue.BaseView.extend({
-        template:
-        '<div class="node">' +
-            '<button class="delete">x</button>' +
-            '<div class="portContainer">' +
-                '<input type="text" class="varName" placeholder="Variable" />'+
-            '</div>' +
-            '<button class="add">+</button>' +
-        '</div>',
-
-        portTemplate:
-        '<div id="<%= TemplateId %>">' +
-            '<button class="delete">-</button>' +
-            '<input type="text" class="value" value="<%= templateValue %>">' +
-        '</div>',
+    joint.shapes.dialogue.BranchView = joint.shapes.dialogue.MultiView.extend({
 
         initialize: function () {
-            joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
+            joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
 
-            this.model.set('values', new Map());
-
-            Object.assign(this.$box, {
-                $portContainer: this.$box.find('div.portContainer'),
-                $varName: this.$box.find('input.varName'),
-                $add: this.$box.find('button.add')
-            });
+            this.$box.$varName = this.$box.$delete.after($('<input type="text" class="varName" placeholder="Variable" />'));
 
             this.$box.$varName.on('input propertychange', event => {
                 this.model.set('varName', $(event.target).val());
             });
 
-            this.$box.$add.click(() => this.addPort());
-
             this.addPort("Default");
             this.addPort();
         },
 
-        addPort: function(defaultValue = null) {
-            let values = null;
-            values = this.model.get('values');
-
-            values.set(_generateId(), defaultValue);
-            this.model.set('values', values);
-            this.updateBox();
-        },
-
-
         updateBox: function() {
-            joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
-            for (let [id, value] of this.model.get('values')){
-                if (this.$box.$portContainer.find('#' + id).length > 0) {
-                    this.$box.$portContainer.find('#' + id).val(value);
-                } else {
-                    let $newChoice = $(_.template(this.portTemplate)({TemplateId: id, templateValue: value}));
-
-                    Object.assign($newChoice, {
-                        $deleteButton: $newChoice.find('button.delete'),
-                        $value:  $newChoice.find('input.value')
-                    });
-
-                    $newChoice.$value.on('input propertychange', event => {
-                        let values = this.model.get('values');
-
-                        values.set($newChoice.attr('id'), $(event.target).val());
-                        this.model.set('values', values);
-                    });
-
-                    $newChoice.$deleteButton.click(event => {
-
-                    });
-
-
-                    this.$box.$portContainer.append($newChoice); //Generate a new one.
-                }
-            }
-
-            // console.log(values);
-            /*for (let value of values) {
-                let $parentElement = $('<div>');
-
-                $parentElement.$button = $('<button>')
-                    .attr({class: 'delete'})
-                    .text('-')
-                    //.click(event => $parentElement.remove())
-                    .appendTo($parentElement);
-
-                $parentElement.$input = $('<input>')
-                    .attr({ type: 'text', class: 'value'})
-                    .val(value)
-                    .appendTo($parentElement);
-
-                //.appendTo(this.$box.$portContainer);
-                this.$box.$portContainer.append($parentElement);
-                // console.log($parentElement);
-            }*/
+            joint.shapes.dialogue.MultiView.prototype.updateBox.apply(this, arguments);
         },
-            // var valueFields = this.$box.find('input.value');
-            //
-            // // Add value fields if necessary
-            // for (var i = valueFields.length; i < values.length; i++) {
-            //     /*jshint loopfunc: true */
-            //     // Prevent paper from handling pointerdown.
-            //     var field = $('<input type="text" class="value" />');
-            //     field.attr('placeholder', 'Value ' + (i + 1).toString());
-            //     field.attr('index', i);
-            //     this.$box.append(field);
-            //     field.on('mousedown click', evt => { evt.stopPropagation(); });
-            //
-            //     // This is an example of reacting on the input change and storing the input data in the cell model.
-            //     field.on('change', evt => {
-            //         var values = this.model.get('values').slice(0);
-            //         values[$(evt.target).attr('index')] = $(evt.target).val();
-            //         this.model.set('values', values);
-            //     });
-            // }
-            //
-            // // Remove value fields if necessary
-            // for (let i = values.length; i < valueFields.length; i++)
-            // $(valueFields[i]).remove();
-            //
-            // // Update value fields
-            // valueFields = this.$box.find('input.value');
-            // for (let i = 0; i < valueFields.length; i++) {
-            //     let field = $(valueFields[i]);
-            //     if (!field.is(':focus'))
-            //     field.val(values[i]);
-            // }
-        //},
-
-        /*updateSize: function() {
-            var textField = this.$box.find('input.name');
-            var height = textField.outerHeight(true);
-            this.model.set('size', { width: 200, height: 100 + Math.max(0, (this.model.get('outPorts').length - 1) * height) });
-        },*/
-
-        // removePort: function() {
-        //     if (this.model.get('outPorts').length > 1) {
-        //         var outPorts = this.model.get('outPorts').slice(0);
-        //         outPorts.pop();
-        //         this.model.set('outPorts', outPorts);
-        //         var values = this.model.get('values').slice(0);
-        //         values.pop();
-        //         this.model.set('values', values);
-        //         this.updateSize();
-        //     }
-        // },
-
     });
 
 
@@ -459,10 +392,32 @@ var csde = (function csdeMaster(){
     	if (magnetTarget.attributes.magnet.nodeValue !== 'passive')
     		return false;
 
+        const _allowableConnections = [
+            ['dialogue.Text', 'dialogue.Text'],
+            ['dialogue.Text', 'dialogue.Node'],
+            ['dialogue.Text', 'dialogue.Choice'],
+            ['dialogue.Text', 'dialogue.Set'],
+            ['dialogue.Text', 'dialogue.Branch'],
+            ['dialogue.Choice', 'dialogue.Text'],
+            ['dialogue.Choice', 'dialogue.Node'],
+            ['dialogue.Choice', 'dialogue.Set'],
+            ['dialogue.Choice', 'dialogue.Branch'],
+            ['dialogue.Set', 'dialogue.Text'],
+            ['dialogue.Set', 'dialogue.Node'],
+            ['dialogue.Set', 'dialogue.Set'],
+            ['dialogue.Set', 'dialogue.Branch'],
+            ['dialogue.Branch', 'dialogue.Text'],
+            ['dialogue.Branch', 'dialogue.Node'],
+            ['dialogue.Branch', 'dialogue.Set'],
+            ['dialogue.Branch', 'dialogue.Branch'],
+        ];
+
         // See if this connection type is in the list.
-        let sourceType = cellViewSource.model.attributes.type;
+        /*let sourceType = cellViewSource.model.attributes.type;
     	let targetType = cellViewTarget.model.attributes.type;
-        return allowableConnections.find(rule => sourceType == rule[0] && targetType == rule[1]);
+        return _allowableConnections.find(rule => sourceType == rule[0] && targetType == rule[1]);*/
+
+        return true;
     }
 
     function _validateMagnet(cellView, magnet) {
@@ -628,6 +583,5 @@ var csde = (function csdeMaster(){
         addCharacters: characters => _characters = addCharacters(characters, _characters),
         clearCharacters: () => _characters = resetCharacters(),
         start: initialize
-        /*Short name: long name */
     };
 })();

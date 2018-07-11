@@ -13,6 +13,18 @@ html, body {
 	background: linear-gradient(to bottom, #7d8ea2 0%,#121413 100%); /* W3C */
 	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#7d8ea2', endColorstr='#121413',GradientType=0 ); /* IE6-9 */
 	overflow: hidden;
+
+}
+
+/* Highlight available ports! */
+.available-magnet {
+    fill: lightgreen;
+}
+
+.node select, .node input, .node textarea, .node button {
+
+   /* Enable mouse interaction. */
+   pointer-events: all;
 }
 
 #container {
@@ -79,21 +91,25 @@ html, body {
 
 .inPorts circle {
 	fill: #c0392b;
-	stroke-width: 0;
+	stroke-width: 1;
 }
 
 .outPorts circle {
 	fill: #8c6;
-	stroke-width: 0;
+	stroke-width: 1;
 }
 
 /*
 Node styles
 */
 
+div.node {
+	pointer-events: none;
+}
+
 .node {
 	position: absolute;
-	background: #666;
+	background: transparent;/*#666;*/
 	/* Make sure events are propagated to the JointJS element so, e.g. dragging works.*/
 	pointer-events: none;
 	-webkit-user-select: none;

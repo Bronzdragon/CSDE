@@ -7,8 +7,6 @@ var csde = (function csdeMaster(){
     let _characters = resetCharacters();
     let _mouseObj = {};
 
-
-
     const _defaultLink = new joint.dia.Link({
     	attrs: {
     		'.marker-target': { d: 'M 10 0 L 0 5 L 10 10 z', },
@@ -23,33 +21,57 @@ var csde = (function csdeMaster(){
     joint.shapes.dialogue.Base     = joint.shapes.basic.Rect.extend({
         defaults: joint.util.deepSupplement({
             type: 'dialogue.Base',
-            size: { width: 250, height: 135 },
+            size: { width: 256, height: 128 },
             name: '',
-            //inPorts: ['input'],
-            //outPorts: ['output'],
             attrs: {
-                rect: { stroke: 'none', 'fill-opacity': 0 },
+                rect: { fill: '#666666', stroke: 'none', /*'fill-opacity': 0*/ },
                 text: { display: 'none' },
-                //'.inPorts circle': { magnet: 'passive' },
-                //'.outPorts circle': { magnet: true, },
+                root: { magnet: false }
             },
+            'z-index': -1,
+            ports: {
+                groups: {
+                    'inputs': {
+                        position: {
+                            name: 'absolute',
+                            args: { x: 0, y: 0}
+                        },
+                        markup :'<g><rect class="outer" magnet="passive" width="64" height="64" fill="green"/></g>',
+                    },
+                    'outputs': {
+                        position: {
+                            name: 'absolute',
+                            args: {x: 0, y: 64}//{x: 0, y: this.model.get('size').height - 0}
+                        },
+                        markup :'<g><rect class="outer" magnet="true" width="64" height="64" fill="red"/></g>',
+                    }
+                },
+                items: [ { group: 'inputs' } ]
+            }
         }, joint.shapes.basic.Rect.prototype.defaults)
     });
     joint.shapes.dialogue.BaseView = joint.dia.ElementView.extend({
         template:
         '<div class="node">' +
             '<button class="delete">x</button>' +
-            'Hello!' +
+            'Default node, please ignore.' +
         '</div>',
 
         initialize: function () {
-            // console.log("initializing...");
             joint.dia.ElementView.prototype.initialize.apply(this, arguments);
 
             this.$box = $(_.template(this.template)());
             this.$box.$delete = this.$box.find('button.delete');
 
             this.$box.$delete.click(() => this.model.remove());
+            this.model.addPort({
+                group: 'outputs',
+                position: {
+                    name: 'absolute',
+                    args: {x: 0, y: this.model.get('size').height - 0}
+                },
+                z: 'auto'
+            });
 
             // Update the box position whenever the underlying model changes.
             this.model.on('change', this.updateBox, this);
@@ -89,7 +111,19 @@ var csde = (function csdeMaster(){
     joint.shapes.dialogue.Multi     = joint.shapes.dialogue.Base.extend({
         defaults: joint.util.deepSupplement({
             type: 'dialogue.Multi',
-            values: null
+            ports: {
+                groups: {
+                    'outputs': {
+                        position: {
+                            name: 'right',
+                            args: {x: 100, y:6}
+                            //args: {x: 0, y: 64}//{x: 0, y: this.model.get('size').height - 0}
+                        },
+                        markup :'<g><rect class="outer" magnet="true" width="64" height="32" fill="red"/></g>',
+                    }
+                },
+            },
+            values: null,
         }, joint.shapes.dialogue.Base.prototype.defaults)
     });
     joint.shapes.dialogue.MultiView = joint.shapes.dialogue.BaseView.extend({
@@ -106,6 +140,8 @@ var csde = (function csdeMaster(){
             '<input type="text" class="value" value="<%= templateValue %>">' +
         '</div>',
 
+        defaultSize: 50,
+
         initialize: function() {
             this.model.set('values', new Map());
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
@@ -113,7 +149,7 @@ var csde = (function csdeMaster(){
             this.$box.$choiceContainer = this.$box.find('div.choiceContainer');
 
             this.$box.$add = this.$box.find('button.add');
-            this.$box.$add.click(() => this.addPort());
+            this.$box.$add.click(() => this.addChoice());
         },
 
         updateBox: function() {
@@ -128,6 +164,15 @@ var csde = (function csdeMaster(){
                 } else {
                     // There is a value, but no element to go along with it!
                     this.$box.$choiceContainer.append(this.createElement(id, value));
+                    /*let size = this.model.get('size');
+
+                    this.model.addPort({
+                        group: 'outputs',
+                        position: {
+                            name: 'absolute',
+                            args: {x: size.width - 64, y: size.height - 32}
+                        }
+                    });*/
                 }
             }
 
@@ -161,13 +206,12 @@ var csde = (function csdeMaster(){
                 values.delete($newChoice.attr('id'));
                 this.model.set('values', values);
                 this.updateBox();
-                console.log("Values before removal", this.model.get('values'));
             });
 
             return $newChoice;
         },
 
-        addPort: function(defaultValue = null) {
+        addChoice: function(defaultValue = null) {
             let values = this.model.get('values');
 
             values.set(_generateId(), defaultValue);
@@ -178,7 +222,7 @@ var csde = (function csdeMaster(){
         updateSize: function() {
             this.model.set('size', {
                 width: this.model.get('size').width,
-                height: 70 + this.$box.$choiceContainer.outerHeight(true)
+                height: this.defaultSize + this.$box.$choiceContainer.outerHeight(true)
             });
         }
     });
@@ -186,7 +230,7 @@ var csde = (function csdeMaster(){
     joint.shapes.dialogue.Text     = joint.shapes.dialogue.Base.extend({
         defaults: joint.util.deepSupplement({
             type: 'dialogue.Text',
-            size: { width: 450, height: 200 },
+            size: { width: 448, height: 192 },
             textarea: 'Start writing',
             actor: '', // Value to be set later.
             speech: '',  // Value to be set later.
@@ -197,7 +241,9 @@ var csde = (function csdeMaster(){
         template:
             '<div class="node">' +
                 '<button class="delete">x</button>' +
+                '<br />' +
                 '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
+                '<br />' +
                 '<select class="actor" />' +
                 '<textarea class="speech" rows="4" cols="27" placeholder="Speech"></textarea>' +
             '</div>',
@@ -217,6 +263,10 @@ var csde = (function csdeMaster(){
 
                 this.$box.$character_select.append($character_option);
             }
+
+            this.$box.$character_select.change(event =>{
+                this.model.set('actor', $(event.target).val());
+            });
 
             this.$box.$speech.on('input propertychange', event => {
                 this.model.set('speech', $(event.target).val());
@@ -343,7 +393,7 @@ var csde = (function csdeMaster(){
     joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.MultiView.extend({
         initialize: function() {
             joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
-            this.addPort();
+            this.addChoice();
         }
     });
 
@@ -355,6 +405,8 @@ var csde = (function csdeMaster(){
     });
     joint.shapes.dialogue.BranchView = joint.shapes.dialogue.MultiView.extend({
 
+        defaultSize: 75,
+
         initialize: function () {
             joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
 
@@ -364,8 +416,8 @@ var csde = (function csdeMaster(){
                 this.model.set('varName', $(event.target).val());
             });
 
-            this.addPort("Default");
-            this.addPort();
+            this.addChoice("Default");
+            this.addChoice();
         },
 
         updateBox: function() {
@@ -392,31 +444,6 @@ var csde = (function csdeMaster(){
     	if (magnetTarget.attributes.magnet.nodeValue !== 'passive')
     		return false;
 
-        const _allowableConnections = [
-            ['dialogue.Text', 'dialogue.Text'],
-            ['dialogue.Text', 'dialogue.Node'],
-            ['dialogue.Text', 'dialogue.Choice'],
-            ['dialogue.Text', 'dialogue.Set'],
-            ['dialogue.Text', 'dialogue.Branch'],
-            ['dialogue.Choice', 'dialogue.Text'],
-            ['dialogue.Choice', 'dialogue.Node'],
-            ['dialogue.Choice', 'dialogue.Set'],
-            ['dialogue.Choice', 'dialogue.Branch'],
-            ['dialogue.Set', 'dialogue.Text'],
-            ['dialogue.Set', 'dialogue.Node'],
-            ['dialogue.Set', 'dialogue.Set'],
-            ['dialogue.Set', 'dialogue.Branch'],
-            ['dialogue.Branch', 'dialogue.Text'],
-            ['dialogue.Branch', 'dialogue.Node'],
-            ['dialogue.Branch', 'dialogue.Set'],
-            ['dialogue.Branch', 'dialogue.Branch'],
-        ];
-
-        // See if this connection type is in the list.
-        /*let sourceType = cellViewSource.model.attributes.type;
-    	let targetType = cellViewTarget.model.attributes.type;
-        return _allowableConnections.find(rule => sourceType == rule[0] && targetType == rule[1]);*/
-
         return true;
     }
 
@@ -424,26 +451,8 @@ var csde = (function csdeMaster(){
     	if (magnet.getAttribute('magnet') === 'passive')
     		return false;
 
-    	// If unlimited connections attribute is null, we can only ever connect to one object
-    	// If it is not null, it is an array of type strings which are allowed to have unlimited connections
-    	let unlimitedConnections = magnet.getAttribute('unlimitedConnections');
     	let links = _graph.getConnectedLinks(cellView.model);
-
-
-        for (let link of links) {
-            if (link.attributes.source.id === cellView.model.id && link.attributes.source.port === magnet.attributes.port.nodeValue) {
-                // This port already has a connection
-                if (unlimitedConnections && link.attributes.target.id) {
-                    let targetCell = _graph.getCell(link.attributes.target.id);
-
-                    // It's okay because this target type has unlimited connections
-                    return unlimitedConnections.contains(targetCell.attributes.type);
-                }
-                return false;
-            }
-        }
-
-        return true;
+        return !links.some(link => link.attributes.source.id === cellView.model.id && link.attributes.source.port === magnet.attributes.port.nodeValue);
     }
 
     function _checkCharacter(character){
@@ -451,6 +460,7 @@ var csde = (function csdeMaster(){
     }
 
     function _addNodeToGraph(nodeType, location) {
+
         _graph.addCell(new nodeType ({ position: location }));
     }
 
@@ -477,6 +487,12 @@ var csde = (function csdeMaster(){
                     case 'branch':
                         type = joint.shapes.dialogue.Branch;
                         break;
+                    case 'base':
+                        type = joint.shapes.dialogue.Base;
+                        break;
+                    case 'multi':
+                        type = joint.shapes.dialogue.Multi;
+                        break;
                     default:
                         console.log(TODO);
                         return;
@@ -489,6 +505,8 @@ var csde = (function csdeMaster(){
                 'choice': {name: 'Choice'},
                 'set': {name: 'Set flag'},
                 'branch': {name: 'Conditional branch'},
+                'base': {name: 'DEBUG - base'},
+                'multi': {name: 'DEBUG - multi'},
                 'data': {
                     name: 'Data management',
                     items: {
@@ -530,52 +548,49 @@ var csde = (function csdeMaster(){
         });
     }
 
-    function initialize(baseElement) {
+    function initialize({element:baseElement , width = 800, height = 600}) {
 
         if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
         _$container = baseElement;
         _$container.$paper = baseElement.find('div#paper');
 
         _graph = new joint.dia.Graph();
-        let paper = new joint.dia.Paper({
+        let _paper = new joint.dia.Paper({
             el: _$container.$paper,
             model: _graph,
-            width: 16000,
-            height: 8000,
-            gridSize: 16,
+            width: width,
+            height: height,
+            gridSize: 64, // Previously 16
             preventContextMenu: false,
             // drawGrid: {name: 'doubleMesh', thickness: 0.8},
             defaultLink: _defaultLink,
             validateConnection: _validateConnection,
             validateMagnet: _validateMagnet,
-            snapLinks: { radius: 75 }
+            snapLinks: { radius: 75 },
+            markAvailable: true
         });
 
         _addContextMenu(_$container);
 
-        _registerPanning(paper, _$container);
+        _registerPanning(_paper, _$container);
     }
 
-    function addCharacter(newCharacter, list){
-        if (!_checkCharacter(newCharacter)) {
-            throw new TypeError("The character be an object with a name and url key.");
-        }
-        list.push(newCharacter);
-
-        return list;
-    }
-
-    function addCharacters(newCharacters, list) {
+    function addCharacters(newCharacters, list = resetCharacters()) {
         if (!Array.isArray(newCharacters) || !newCharacters.every(_checkCharacter)) {
             throw new TypeError("The character list must be an array of objects, with each object having a name and url key.");
         }
-        list = list.concat(newCharacters);
-        return list;
+        return list.concat(newCharacters);
+    }
+
+    function addCharacter(newCharacter, list = resetCharacters()){
+        if (!_checkCharacter(newCharacter)) {
+            throw new TypeError("The character must be an object with a name and url key.");
+        }
+        return addCharacters([newCharacter], list);
     }
 
     function resetCharacters(){
-        list = [];
-        return addCharacter({name: 'unknown', url: 'unknown.png'}, list);
+        return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
     }
 
     return {

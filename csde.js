@@ -1,5 +1,7 @@
 /* jshint esversion: 6 */
 
+
+let test = null;
 var csde = (function csdeMaster(){
 
     let _$container = null;
@@ -9,46 +11,41 @@ var csde = (function csdeMaster(){
 
     const _defaultLink = new joint.dia.Link({
     	attrs: {
-    		'.marker-target': { d: 'M 10 0 L 0 5 L 10 10 z', },
-    		'.link-tools .tool-remove circle, .marker-vertex': { r: 8 },
-
+    		//'.marker-target': { d: 'M 10 0 L 0 5 L 10 10 z', },
+    		// '/.link-tools .tool-remove circle, .marker-vertex': { r: 8 },
     	},
     }).connector('smooth');
+
+    const style = {
+        inputWidth: 64,
+        outputWidth: 32
+    };
+
+    const _gridSize = 10;
+
+    const node = {
+        'text':   { width: 500, height: 200 },
+        'set':    { width: 250, height: 100 },
+        'choice': { width: 250, height: 200 },
+        'branch': { width: 250, height: 200 }
+    };
 
     // Register new models and views
     joint.shapes.dialogue = {};
 
-    joint.shapes.dialogue.Base     = joint.shapes.basic.Rect.extend({
-        defaults: joint.util.deepSupplement({
-            type: 'dialogue.Base',
-            size: { width: 256, height: 128 },
-            name: '',
-            attrs: {
-                rect: { fill: '#666666', stroke: 'none', /*'fill-opacity': 0*/ },
+    console.log(joint.shapes.standard.Rectangle);
+
+    joint.shapes.standard.Rectangle.define('dialogue.Base', {
+        size: { width: 256, height: 128 },
+        attrs: {
+            body: {
+                x: 0, y: 0,
+                //rx: 5, ry: 5, // For rounded corners.
+                stroke: 'none',
                 text: { display: 'none' },
-                root: { magnet: false }
             },
-            'z-index': -1,
-            ports: {
-                groups: {
-                    'inputs': {
-                        position: {
-                            name: 'absolute',
-                            args: { x: 0, y: 0}
-                        },
-                        markup :'<g><rect class="outer" magnet="passive" width="64" height="64" fill="green"/></g>',
-                    },
-                    'outputs': {
-                        position: {
-                            name: 'absolute',
-                            args: {x: 0, y: 64}//{x: 0, y: this.model.get('size').height - 0}
-                        },
-                        markup :'<g><rect class="outer" magnet="true" width="64" height="64" fill="red"/></g>',
-                    }
-                },
-                items: [ { group: 'inputs' } ]
-            }
-        }, joint.shapes.basic.Rect.prototype.defaults)
+            root: { magnet: false },
+        },
     });
     joint.shapes.dialogue.BaseView = joint.dia.ElementView.extend({
         template:
@@ -64,14 +61,6 @@ var csde = (function csdeMaster(){
             this.$box.$delete = this.$box.find('button.delete');
 
             this.$box.$delete.click(() => this.model.remove());
-            this.model.addPort({
-                group: 'outputs',
-                position: {
-                    name: 'absolute',
-                    args: {x: 0, y: this.model.get('size').height - 0}
-                },
-                z: 'auto'
-            });
 
             // Update the box position whenever the underlying model changes.
             this.model.on('change', this.updateBox, this);
@@ -108,23 +97,8 @@ var csde = (function csdeMaster(){
         removeBox: function(event) { this.$box.remove(); }
     });
 
-    joint.shapes.dialogue.Multi     = joint.shapes.dialogue.Base.extend({
-        defaults: joint.util.deepSupplement({
-            type: 'dialogue.Multi',
-            ports: {
-                groups: {
-                    'outputs': {
-                        position: {
-                            name: 'right',
-                            args: {x: 100, y:6}
-                            //args: {x: 0, y: 64}//{x: 0, y: this.model.get('size').height - 0}
-                        },
-                        markup :'<g><rect class="outer" magnet="true" width="64" height="32" fill="red"/></g>',
-                    }
-                },
-            },
-            values: null,
-        }, joint.shapes.dialogue.Base.prototype.defaults)
+    joint.shapes.dialogue.Base.define('dialogue.Multi', {
+        values: null,
     });
     joint.shapes.dialogue.MultiView = joint.shapes.dialogue.BaseView.extend({
         template:
@@ -227,23 +201,30 @@ var csde = (function csdeMaster(){
         }
     });
 
-    joint.shapes.dialogue.Text     = joint.shapes.dialogue.Base.extend({
-        defaults: joint.util.deepSupplement({
-            type: 'dialogue.Text',
-            size: { width: 448, height: 192 },
-            textarea: 'Start writing',
-            actor: '', // Value to be set later.
-            speech: '',  // Value to be set later.
+    joint.shapes.dialogue.Base.define('dialogue.Text', {
+        size: { width: node.text.width, height: node.text.height },
+        ports: {
+            groups: {
+                'input': {
+                    position: {
+                        name: 'absolute',
+                        args: { x: 0, y: 0}
+                    },
+                },
+                'output': {position: {
+                    name: 'absolute',
+                    args: { x: 0, y: node.text.height / 2}
+                },}
+            },
         },
-        joint.shapes.dialogue.Base.prototype.defaults)
+        actor: '', // Value to be set later.
+        speech: ''  // Value to be set later.
     });
     joint.shapes.dialogue.TextView = joint.shapes.dialogue.BaseView.extend({
         template:
             '<div class="node">' +
                 '<button class="delete">x</button>' +
-                '<br />' +
                 '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
-                '<br />' +
                 '<select class="actor" />' +
                 '<textarea class="speech" rows="4" cols="27" placeholder="Speech"></textarea>' +
             '</div>',
@@ -283,15 +264,15 @@ var csde = (function csdeMaster(){
 
             this.$box.$speech.submit(event => { // Spanw a new textbox when enter is pressed
                 let bounding_box = this.model.getBBox();
-                let new_box = new joint.shapes.dialogue.Text({position: {x: bounding_box.x , y: bounding_box.y + bounding_box.height + 20}});
+                let new_box = new joint.shapes.dialogue.Text({position: {x: bounding_box.x , y: bounding_box.y + bounding_box.height + (_gridSize * 1)}});                _graph.addCell(new_box); // The box has to be added to the graph before the ports become available.
 
                 let new_link = _defaultLink.clone();
-                new_link.set('source', { id: this.model.id, port: 'output' });
-                new_link.set('target', { id: new_box.id, port: 'input' });
 
-                _graph.addCells([new_box, new_link]);
+                new_link.source({id: this.model.id, port: this.model.getPorts().find(element => element.group === "output").id });
+                new_link.target({id: new_box.id, port: new_box.getPorts().find(element => element.group === "input").id});
+                _graph.addCell(new_link);
+
                 new_box.trigger('focus');
-
                 event.preventDefault();
             });
 
@@ -314,6 +295,18 @@ var csde = (function csdeMaster(){
             });
 
             this.listenTo(this.model, 'focus', this.focus);
+
+            console.log("Creating ports.");
+
+            this.model.input = {
+                group: "input",
+                markup :`<g><rect class="magnet input left" magnet="true" width="24" height="${node.text.height/2}" /></g>`,
+            };
+            this.model.output = {
+                group: 'output',
+                markup :`<g><rect class="magnet output left" magnet="true" width="24" height="${node.text.height/2}" /></g>`
+            };
+            this.model.addPorts([this.model.input, this.model.output]);
         },
 
         focus: function() {
@@ -337,58 +330,70 @@ var csde = (function csdeMaster(){
         }
     });
 
-    joint.shapes.dialogue.Set     = joint.shapes.dialogue.Base.extend({
-        defaults: joint.util.deepSupplement({
-            type: 'dialogue.Set',
-            // inPorts: ['input'],
-            // outPorts: ['output'],
-            // size: { width: 200, height: 100, },
-            name: '',
-            value: ''
+    joint.shapes.dialogue.Base.define('dialogue.Set', {
+        size: { width: node.set.width, height: node.set.height },
+        userKey: '',
+        userValue: '',
+        ports: {
+            groups: {
+                'input': {
+                    position: {
+                        name: 'absolute',
+                        args: { x: 0, y: 0}
+                    },
+                },
+                'output': {position: {
+                    name: 'absolute',
+                    args: { x: 0, y: node.set.height / 2}
+                },}
+            },
         },
-        joint.shapes.dialogue.Base.prototype.defaults),
     });
     joint.shapes.dialogue.SetView = joint.shapes.dialogue.BaseView.extend({
         template:
         '<div class="node">' +
-        '<button class="delete">x</button>' +
-        '<input type="text" class="name" placeholder="Variable" />' +
-        '<input type="text" class="value" placeholder="Value" />' +
+            '<button class="delete">x</button>' +
+            '<input type="text" class="userKey" placeholder="Variable" />' +
+            '<input type="text" class="UserValue" placeholder="Value" />' +
         '</div>',
 
         initialize: function() {
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
 
-            this.$box.$name = this.$box.find("input.name");
-            this.$box.$value = this.$box.find("input.value");
+            this.$box.$userKey = this.$box.find("input.userKey");
+            this.$box.$userValue = this.$box.find("input.userValue");
 
-            this.$box.$name.change( event => {
-                this.model.set('name', $(event.target).val());
+            this.$box.$userKey.change( event => {
+                this.model.set('userKey', $(event.target).val());
             });
 
-            this.$box.$value.change(event => {
-                this.model.set('value', $(event.target).val());
+            this.$box.$userValue.change(event => {
+                this.model.set('userValue', $(event.target).val());
             });
+
+            this.input = {
+                group: "input",
+                markup :`<g><rect class="magnet input left" magnet="passive" width="24" height="${node.set.height/2}" /></g>`,
+            };
+            this.output = {
+                group: 'output',
+                markup :`<g><rect class="magnet output left" magnet="true" width="24" height="${node.set.height/2}" /></g>`
+            };
+            this.model.addPorts([this.input, this.output]);
         },
 
         updateBox: function() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
-            if (!this.$box.$name.is(':focus'))
-            this.$box.$name.val(this.model.get('name'));
+            if (!this.$box.$userKey.is(':focus'))
+                this.$box.$userKey.val(this.model.get('userKey'));
 
-            if (!this.$box.$value.is(':focus'))
-            this.$box.$value.val(this.model.get('value'));
-
+            if (!this.$box.$userValue.is(':focus'))
+                this.$box.$userValue.val(this.model.get('userValue'));
         }
-
     });
 
-    joint.shapes.dialogue.Choice     = joint.shapes.dialogue.Multi.extend({
-        defaults: joint.util.deepSupplement({
-            type: 'dialogue.Choice',
-        },
-        joint.shapes.dialogue.Base.prototype.defaults),
+    joint.shapes.dialogue.Multi.define('dialogue.Choice', {
     });
     joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.MultiView.extend({
         initialize: function() {
@@ -397,11 +402,8 @@ var csde = (function csdeMaster(){
         }
     });
 
-    joint.shapes.dialogue.Branch     = joint.shapes.dialogue.Multi.extend({
-        defaults: joint.util.deepSupplement({
-            type: 'dialogue.Branch',
-            varName: null,
-        }, joint.shapes.dialogue.Base.prototype.defaults)
+    joint.shapes.dialogue.Multi.define('dialogue.Branch', {
+        varName: ''
     });
     joint.shapes.dialogue.BranchView = joint.shapes.dialogue.MultiView.extend({
 
@@ -409,6 +411,7 @@ var csde = (function csdeMaster(){
 
         initialize: function () {
             joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
+            //this.model.set('varName', null);
 
             this.$box.$varName = this.$box.$delete.after($('<input type="text" class="varName" placeholder="Variable" />'));
 
@@ -440,19 +443,35 @@ var csde = (function csdeMaster(){
     	if (magnetSource == magnetTarget || cellViewSource == cellViewTarget)
     		return false;
 
-    	// Can't connect to an output port
-    	if (magnetTarget.attributes.magnet.nodeValue !== 'passive')
-    		return false;
+        // Prevent inputs/outputs from linking to themselves
+        let sourceType = magnetSource.getAttribute('port-group');
+        if ($(magnetTarget).hasClass(sourceType))
+            return false;
+
+        // If we're connecting to an Output node, allow only one connection.
+        let isOutput = magnetTarget.getAttribute("class").includes("output");
+        if (isOutput) {
+            let portId = magnetTarget.parentNode.getAttribute('port');
+            let targetLinks = _graph.getConnectedLinks(cellViewTarget.model);
+            let portHasConnections = targetLinks.some(link => {
+                if (linkView.model == link) return false; // Discount the current connection.
+                return (link.get('source').port === portId ||
+                        link.get('target').port === portId);
+            });
+            if (portHasConnections) return false;
+        }
 
         return true;
     }
 
     function _validateMagnet(cellView, magnet) {
-    	if (magnet.getAttribute('magnet') === 'passive')
-    		return false;
+        let links = _graph.getConnectedLinks(cellView.model);
+        let portId = magnet.parentNode.getAttribute('port');
 
-    	let links = _graph.getConnectedLinks(cellView.model);
-        return !links.some(link => link.attributes.source.id === cellView.model.id && link.attributes.source.port === magnet.attributes.port.nodeValue);
+        let hasConnection = links.some(
+            link => link.get('source').port === portId || link.get('target').port === portId
+        );
+        return !hasConnection;
     }
 
     function _checkCharacter(character){
@@ -468,12 +487,13 @@ var csde = (function csdeMaster(){
         $.contextMenu({
             selector: 'div#paper',
             callback: function (itemKey, opt, rootMenu, originalEvent) {
-                let pos = {
-                    x: Math.round(opt.$menu.position().left + element.scrollLeft()),
-                    y: Math.round(opt.$menu.position().top +  element.scrollTop())
-                };
 
                 let type = null;
+                let pos = {
+                    x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
+                    y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
+                };
+
                 switch (itemKey) {
                     case 'text':
                         type = joint.shapes.dialogue.Text;
@@ -560,14 +580,21 @@ var csde = (function csdeMaster(){
             model: _graph,
             width: width,
             height: height,
-            gridSize: 64, // Previously 16
+            gridSize: _gridSize,
             preventContextMenu: false,
-            // drawGrid: {name: 'doubleMesh', thickness: 0.8},
+            drawGrid: {
+                name: 'dot',
+                args: { color: '#333366', thickness: 1.5},
+
+            //     args: [
+            //         { color: 'black', thickness: 2 }, // settings for the primary mesh
+            //         { color: 'grey', scaleFactor: 10, thickness: 1 } //settings for the secondary mesh
+            // ]
+            },
             defaultLink: _defaultLink,
             validateConnection: _validateConnection,
             validateMagnet: _validateMagnet,
             snapLinks: { radius: 75 },
-            markAvailable: true
         });
 
         _addContextMenu(_$container);

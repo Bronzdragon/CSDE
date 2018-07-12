@@ -10,7 +10,7 @@ html, body {
 }
 
 #paper {
-	background-color: #101219
+	background-color: #202229
 }
 
 /* Node styles */
@@ -19,7 +19,13 @@ html, body {
 	fill: darkgreen;
 }
 .magnet.output {
+	fill: #2c2f33;
 	fill: darkred;
+}
+
+.joint-type-dialogue rect {
+	fill: #101219;
+	stroke: 'none';
 }
 
 .node {
@@ -29,6 +35,7 @@ html, body {
 	-webkit-user-select: none;
 	z-index: 1;
 	color: #fff;
+	padding: 20px;
 }
 
 .node select, .node input, .node textarea, .node button {
@@ -60,4 +67,5 @@ html, body {
 
 .connection {
 	stroke: #fff;
+	stroke-width: 5;
 }

@@ -28,6 +28,10 @@ html, body {
 	stroke: 'none';
 }
 
+input.value.default  {
+	background-color: lightpink; /*rgba(255,0,0,0.1);*/
+}
+
 .node {
 	position: absolute;
 	background: transparent; /* Handled by the SVG instead. */

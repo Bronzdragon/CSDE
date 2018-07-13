@@ -37,11 +37,18 @@ Planned features still in the development pipeline:
 1. Pick a license.
 2. Colouring the speech bubbles per character (based on the avatar, if possible).
 3. When automatically creating a text node, try to set the actor to the previous conversation participant (if there is one).
+4. When magnet is connected, give feedback that it is (for example, it changes colour).
+5. Conditional branch should auto-complete variables.
+6. Note node. Two textboxes (one small one big) that are collapsible. No input/output.
+7. Multiple pages/tabs.
+8. Character importer.
 
 ## Built Using
 
 * [JointJS](http://jointjs.com/) - A flowchart/diagramming library.
 * [NodeJS](https://nodejs.org/en/) + [Electron](https://electronjs.org/) - For turning a javascript app into a Desktop app.
+
+This project is based on a project called [talkit](https://github.com/rodobodolfo/Talkit) by [rodobodolfo](https://github.com/rodobodolfo).
 
 ## License
 

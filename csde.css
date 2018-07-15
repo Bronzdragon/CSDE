@@ -5,6 +5,40 @@ html, body {
 	color: white;
 }
 
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-button {
+  width: 0px;
+  height: 0px;
+}
+::-webkit-scrollbar-thumb {
+  background: #e1e1e1;
+  border: 3px none #ffffff;
+  border-radius: 50px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ffffff;
+}
+::-webkit-scrollbar-thumb:active {
+  background: yellow;
+}
+::-webkit-scrollbar-track {
+  background: #666666;
+  border: 0px none #ffffff;
+  border-radius: 100px;
+}
+::-webkit-scrollbar-track:hover {
+  background: #666666;
+}
+::-webkit-scrollbar-track:active {
+  background: #333333;
+}
+::-webkit-scrollbar-corner {
+  background: rgba(255,255,255, 0.5);
+}
+
 #container {
 	width:100vw;
 	height:100vh;
@@ -44,6 +78,8 @@ html, body {
 	height: 20px;
 	width: 20px;
 	line-height: 20px;
+	margin: 5px;
+	line-height: 0px;
  }
 
 .node select, .node input, .node textarea, .node button {
@@ -85,11 +121,14 @@ div.node div.choiceContainer input {
 	/* For allowing the content not to overflow due to margins and padding */
 	box-sizing: border-box;
 	float: right;
-
-	border: 0px, 0px, 1px, 0px;
-
 	height: 100%;
-	width: calc(100% - 24px)
+	width: calc(100% - 24px);
+	color: white;
+  background-color: #101219;
+  border: solid 1px #1b1b1b;
+  padding: 20px;
+  font-size: 14px;
+  box-shadow: inset 0px 0px 20px #312e2a;
 }
 
 div.node div.footer div.add-row {
@@ -101,10 +140,12 @@ div.node div.footer div.add-row button.add {
 	width: 100%;
 	height: 100%;
 	background: transparent;
+	border-radius: 0px 0px 10px 10px;
 	border: none;
 }
 div.node div.footer div.add-row button.add:hover {
-	background-color: rgba(0, 255, 0, 0.1);
+	background-color: rgba(200, 200, 200, 0.1);
+	border-radius: 0px 0px 10px 10px;
 }
 
 span.plus {
@@ -116,6 +157,7 @@ span.plus {
 	color: black;
 	text-align:center;
 	background: white;
+	line-height:20px;
 }
 
 /*****************
@@ -163,6 +205,10 @@ span.plus {
 }
 .node.text .left button.delete {
 	align-self: flex-end;
+}
+
+.portrait {
+	margin: 5px;
 }
 
 .node.text select {

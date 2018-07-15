@@ -127,8 +127,6 @@ span.plus {
 	stroke: rgba(255,255,255,0.1);
 	stroke-width: -1px;
 	stroke-linecap: round;
-
-	background-image: url("/images/input_left.svg");
 }
 .magnet.output {
 	fill: url(#OutPort);

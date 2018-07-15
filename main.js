@@ -13,8 +13,6 @@ function createWindow() {
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
-
-    //let app = new csde();
 }
 
 app.on('ready', createWindow);

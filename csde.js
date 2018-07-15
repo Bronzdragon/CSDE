@@ -8,7 +8,12 @@ var csde = (function csdeMaster(){
     let _mouseObj = {};
 
     const _defaultLink = new joint.dia.Link({
-    }).connector('smooth');
+        router: { name: 'metro' },
+        //connector: { name: 'rounded' },
+    }).connector('jumpover', {
+        size: 10,
+        jump: 'arc'
+    });
 
     const _gridSize = 10;
 
@@ -783,6 +788,13 @@ var csde = (function csdeMaster(){
             validateConnection: _validateConnection,
             validateMagnet: _validateMagnet,
             snapLinks: { radius: 75 },
+        });
+
+        /* Might cause performance issues on large graphs. Will have to investigate */
+        _graph.on('change:position add', function(cell) {
+            for (let link of _graph.getLinks()) {
+                _paper.findViewByModel(link).update();
+            }
         });
 
         joint.shapes.basic.Generic.define('svg.Gradient', {

@@ -40,7 +40,7 @@ Planned features still in the development pipeline:
 4. When magnet is connected, give feedback that it is (for example, it changes colour).
 5. Conditional branch should auto-complete variables.
 6. Note node. Two textboxes (one small one big) that are collapsible. No input/output.
-7. Change character drop down to auto-complete text field
+7. Next page on paper edges OR dynamically adjust paper size
 8. Multiple pages/tabs.
 9. Glossary editor.
 10. Variable manager.

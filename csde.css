@@ -17,7 +17,9 @@ html, body {
 
 /* Node styles */
 
-/* Generic node styles */
+/***********************
+ * Generic node styles *
+ ***********************/
 
 .joint-type-dialogue rect {
    fill: #101219;
@@ -36,17 +38,14 @@ html, body {
 	border-radius: 0px 10px 10px 0px;
 }
 .node button.delete {
-	 border-radius: 100%;
-	 border:none;
-	 height: 20px;
-	 width: 20px;
-	 overflow: hidden;
-	 text-align: center;
-	 vertical-align: middle;
+	text-align: center;
+	border-radius: 50%;
+	border:none;
+	height: 20px;
+	width: 20px;
+	line-height: 20px;
  }
-.node input.value.default  {
-	background-color: lightpink; /*rgba(255,0,0,0.1);*/
-}
+
 .node select, .node input, .node textarea, .node button {
 	pointer-events: all;/* Enable mouse interaction. */
 }
@@ -54,33 +53,97 @@ html, body {
 	border-radius: 0px 10px 10px 10px;
 }
 
-/* Magnet styles
-****************/
+/*********************
+ * Multi node styles *
+ *********************/
 
-.magnet.input {
-   fill: url(#InputPort);
- stroke: rgba(255,255,255,0.1);
-   stroke-width: -1px;
-   stroke-linecap: round;
+div.node.multi{
+	padding-left: 0px;
+}
 
-
+div.node div.choiceContainer, div.node div.header{
+	box-sizing: border-box;
+	/* width: 100%; */
+	padding-right: 24px;
+	display: flex;
+	flex-direction: column;
 
 }
-.magnet.output {
-      fill: url(#OutPort);
-	  stroke: rgba(255,255,255,0.1);
-	  stroke-width: -1px;
-	  stroke-linecap: round;
 
+div.node div.header{
+	flex-direction: row;
+	justify-content: flex-end;
+	align-items: center;
+}
+
+div.node div.choiceContainer button.remove{
+	height: 100%;
+	width: 24px;
+}
+
+div.node div.choiceContainer input{
+	/* For allowing the content not to overflow due to margins and padding */
+	box-sizing: border-box;
+	float: right;
+
+	border: 0px, 0px, 1px, 0px;
+
+	height: 100%;
+	width: calc(100% - 24px)
+}
+
+div.node div.footer div.add-row {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+div.node div.footer div.add-row button.add {
+	width: 100%;
+	height: 100%;
+	background: transparent;
+	border: none;
+}
+div.node div.footer div.add-row button.add:hover {
+	background-color: rgba(0, 255, 0, 0.1);
+}
+
+span.plus {
+	display: inline-block;
+	border-radius: 100%;
+	border:none;
+	height: 20px;
+	width: 20px;
+	color: black;
+	text-align:center;
+	background: white;
+}
+
+/*****************
+ * Magnet styles *
+ *****************/
+
+.magnet.input {
+	fill: url(#InputPort);
+	stroke: rgba(255,255,255,0.1);
+	stroke-width: -1px;
+	stroke-linecap: round;
+
+	background-image: url("/images/input_left.svg");
+}
+.magnet.output {
+	fill: url(#OutPort);
+	stroke: rgba(255,255,255,0.1);
+	stroke-width: -1px;
+	stroke-linecap: round;
 }
 
 /********************
-* Text Node style:
-*********************/
+ * Text Node style: *
+ ********************/
 
 .joint-type-dialogue-text rect {
-   fill: url(#CharacterColour);
-   stroke: 'none';
+	fill: url(#CharacterColour);
+	stroke: 'none';
 }
 
 .node.text {
@@ -88,18 +151,19 @@ html, body {
 	box-sizing: border-box;
 	/* text-shadow: -1px 0 rgba(0,0,0,0.8), 0 1px rgba(50,50,50,0.8), 1px 0 rgba(50,50,50,0.8), 0 -1px rgba(50,50,50,0.8); */
 	font-family: sans-serif;
-
 }
 .node.text .left {
 	box-sizing: border-box;
 	display: flex;
 	flex-flow: column nowrap;
-	justify-content: center;
+	justify-content: flex-start;
 	align-items: center;
 	box-shadow: 5px 0px 3px rgba(0,0,0,0.3);
 	height: 100%;
 	border-right: solid grey 1px;
-
+}
+.node.text .left button.delete {
+	align-self: flex-end;
 }
 
 .node.text select {
@@ -144,7 +208,6 @@ html, body {
 	text-align: center;
 }
 
-
 /****************
 * Set Node style:
 *****************/
@@ -157,34 +220,47 @@ html, body {
 	justify-content: space-around;
 	align-items: center;
 	padding: 10px 0px; /* Padding at top and bottom */
+
+}
+
+.node.set button.delete{
+	align-self: flex-end;
+	margin-right: 24px;
 }
 
 /*******************
 * Choice Node style:
 ********************/
 
-.node.choice {
-
+.node input.value.default  {
+	border: none;
+	background-color: #FFCCCC;
 }
-.header, .choiceContainer, .footer{
+
+div.node.branch div.header {
 	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-.choiceContainer{
-	width: 100%;
+	flex-direction: column;
 }
 
-.choiceContainer input{
-	/* For allowing the content not to overflow due to margins and padding */
+div.node.branch div.delete-holder {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-end;
+	align-items: center;
+}
+
+div.node.branch div.header div {
+	width: 100%
+}
+div.node.branch div.header input {
 	box-sizing: border-box;
+	float: right;
+
+	border: 0px, 0px, 1px, 0px;
+
 	height: 100%;
-	width: 80%;
+	width: calc(100% - 24px)
 }
-/*.footer{
-	display: flex;
-	align-items: center;
-} */
 
 /* Editor tools */
 

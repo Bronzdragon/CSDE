@@ -8,10 +8,6 @@ var csde = (function csdeMaster(){
     let _mouseObj = {};
 
     const _defaultLink = new joint.dia.Link({
-    	attrs: {
-    		//'.marker-target': { d: 'M 10 0 L 0 5 L 10 10 z', },
-    		// '/.link-tools .tool-remove circle, .marker-vertex': { r: 8 },
-    	},
     }).connector('smooth');
 
     const _gridSize = 10;
@@ -65,7 +61,7 @@ var csde = (function csdeMaster(){
         template:
         '<div class="node base">' +
             '<button class="delete">x</button>' +
-            'Default node, please ignore.' +
+            'Test node.' +
         '</div>',
 
         initialize: function () {
@@ -93,8 +89,6 @@ var csde = (function csdeMaster(){
             * inherited initialize functions.
             ****/
             window.setTimeout(() => this.updateBox(), 0);
-
-
         },
 
         render: function() {
@@ -167,19 +161,15 @@ var csde = (function csdeMaster(){
     joint.shapes.dialogue.MultiView = joint.shapes.dialogue.BaseView.extend({
         template:
         '<div class="node multi">' +
-            '<div class="header">' +
-                `<div class="multi header" style="height: ${_style.node.multi.section}px;"><button class="delete">x</button></div>` +
+            `<div class="multi header" style="height: ${_style.node.multi.section}px;">` +
+                '<button class="delete">x</button>' +
             '</div>' +
             '<div class="choiceContainer"></div>' +
             '<div class="footer">' +
-                `<div class="add-row" style="height: ${_style.node.multi.section}px;"><button class="add">+</button></div>` +
+                `<div class="add-row" style="height: ${_style.node.multi.section}px;">` +
+                    '<button class="add"><span class="plus">+</span></button>' +
+                '</div>' +
             '</div>' +
-        '</div>',
-
-        choiceTemplate:
-        `<div style="height: ${_style.node.multi.section}px;" id="<%= TemplateId %>">` +
-            '<button class="delete">-</button>' +
-            '<input type="text" class="value" value="<%= templateValue %>">' +
         '</div>',
 
         defaultTemplate:
@@ -187,7 +177,11 @@ var csde = (function csdeMaster(){
             '<input type="text" class="value default" value="<%= templateValue %>">' +
         '</div>',
 
-        defaultSize: _style.node.multi.section,
+        choiceTemplate:
+        `<div style="height: ${_style.node.multi.section}px;" id="<%= TemplateId %>">` +
+            '<button class="remove">-</button>' +
+            '<input type="text" class="value" value="<%= templateValue %>">' +
+        '</div>',
 
         initialize: function() {
             this.model.set('values', new Map());
@@ -195,7 +189,7 @@ var csde = (function csdeMaster(){
 
             this.$box.$header = this.$box.find('div.header');
             this.$box.$choiceContainer = this.$box.find('div.choiceContainer');
-            this.$box.$footer = this.$box.find('div.header');
+            this.$box.$footer = this.$box.find('div.footer');
 
             this.$box.$add = this.$box.find('button.add');
             this.$box.$add.click(() => this.addChoice());
@@ -245,8 +239,8 @@ var csde = (function csdeMaster(){
 
 
             if (!choice.isDefault) {
-                $newChoice.$deleteButton = $newChoice.find('button.delete');
-                $newChoice.$deleteButton.click(event => {
+                $newChoice.$remove = $newChoice.find('button.remove');
+                $newChoice.$remove.click(event => {
                 this.model.get('values');
                 let values = this.model.get('values');
                 values.delete($newChoice.attr('id'));
@@ -302,7 +296,6 @@ var csde = (function csdeMaster(){
                     this.$box.$footer.outerHeight(true)
             });
 
-
             for (const [id, value] of this.model.get("values")) {
                 let index = this.$box.$choiceContainer.children().index(this.$box.$choiceContainer.find('#' + id));
 
@@ -312,8 +305,8 @@ var csde = (function csdeMaster(){
                 };
                 this.model.portProp(id, 'attrs/rect', {x: magnetPos.width, y: magnetPos.height});
             }
-        },
 
+        },
         addMagnets: function(){
             this.model.input = {
                 group: "input",
@@ -327,7 +320,6 @@ var csde = (function csdeMaster(){
                     }
                 }
             };
-            console.log("Adding port: ", this.model.input);
 
             this.model.addPort(this.model.input);
         }
@@ -346,6 +338,7 @@ var csde = (function csdeMaster(){
             `<div class="node text" height="${_style.node.text.height}">` +
                 '<textarea class="speech" rows="4" cols="27" placeholder="..."></textarea>' +
                 '<div class="left">' +
+                    '<button class="delete">x</button>' +
                     '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
                     '<select class="actor" />' +
                 '</div>' +
@@ -482,6 +475,7 @@ var csde = (function csdeMaster(){
     joint.shapes.dialogue.SetView = joint.shapes.dialogue.BaseView.extend({
         template:
         '<div class="node set">' +
+            '<button class="delete">x</button>' +
             '<input type="text" class="userKey" placeholder="Key" />' +
             '<input type="text" class="UserValue" placeholder="Value" />' +
         '</div>',
@@ -543,18 +537,20 @@ var csde = (function csdeMaster(){
     joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.MultiView.extend({
         template:
         '<div class="node multi choice">' +
-            '<div class="header">' +
-                `<div class="multi header" style="height: ${_style.node.choice.section}px;"><button class="delete">x</button></div>` +
+            `<div class="multi header" style="height: ${_style.node.choice.section}px;">` +
+                '<button class="delete">x</button>' +
             '</div>' +
             '<div class="choiceContainer"></div>' +
             '<div class="footer">' +
-                `<div class="add-row" style="height: ${_style.node.choice.section}px;"><button class="add">+</button></div>` +
+                `<div class="add-row" style="height: ${_style.node.choice.section}px;">` +
+                    '<button class="add"><span class="plus">+</span></button>' +
+                '</div>' +
             '</div>' +
         '</div>',
 
         choiceTemplate:
         `<div style="height: ${_style.node.choice.section}px;" id="<%= TemplateId %>">` +
-            '<button class="delete">-</button>' +
+            '<button class="remove">-</button>' +
             '<input type="text" class="value" value="<%= templateValue %>">' +
         '</div>',
 
@@ -578,29 +574,30 @@ var csde = (function csdeMaster(){
         userKey: ''
     });
     joint.shapes.dialogue.BranchView = joint.shapes.dialogue.MultiView.extend({
-
         template:
         '<div class="node multi branch">' +
             '<div class="header">' +
-                `<div style="height: ${_style.node.branch.section}px;"><button class="delete">x</button></div>` +
-                `<div style="height: ${_style.node.branch.section}px;"><input type="text" class="userKey" placeholder="Variable" /></div>` +
+                `<div class= "delete-holder" style="height: ${_style.node.branch.section}px;"><button class="delete">x</button></div>` +
+                `<div style="height: ${_style.node.branch.section}px; width: 100%" ><input type="text" class="userKey" placeholder="Variable" /></div>` +
             '</div>' +
             '<div class="choiceContainer"></div>' +
             '<div class="footer">' +
-                `<div class="add-row" style="height: ${_style.node.branch.section}px;"><button class="add">+</button></div>` +
+                `<div class="add-row" style="height: ${_style.node.branch.section}px;">` +
+                    '<button class="add"><span class="plus">+</span></button>' +
+                '</div>' +
             '</div>' +
         '</div>',
 
         choiceTemplate:
             `<div style="height: ${_style.node.branch.section}px;" id="<%= TemplateId %>">` +
-                '<button class="delete">-</button>' +
+                '<button class="remove">-</button>' +
                 '<input type="text" class="value" value="<%= templateValue %>">' +
             '</div>',
 
-            defaultTemplate:
-            `<div style="height: ${_style.node.branch.section}px;" id="<%= TemplateId %>">` +
-                '<input type="text" class="value default" value="<%= templateValue %>">' +
-            '</div>',
+        defaultTemplate:
+        `<div style="height: ${_style.node.branch.section}px;" id="<%= TemplateId %>">` +
+            '<input type="text" class="value default" value="<%= templateValue %>">' +
+        '</div>',
 
         initialize: function () {
             joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);

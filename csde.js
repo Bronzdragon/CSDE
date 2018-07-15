@@ -19,7 +19,7 @@ var csde = (function csdeMaster(){
     const _style = {
         magnet: {
             left:  { width: 24, height: 48 }, // Height should be unused, and instead should fill up their container top to bottom.
-            right: { width: 30, height: 48 },
+            right: { width: 24, height: 48 },
         },
         node: {
             'base':   { width: 250, height: 150 },
@@ -63,7 +63,7 @@ var csde = (function csdeMaster(){
     });
     joint.shapes.dialogue.BaseView = joint.dia.ElementView.extend({
         template:
-        '<div class="node">' +
+        '<div class="node base">' +
             '<button class="delete">x</button>' +
             'Default node, please ignore.' +
         '</div>',
@@ -122,7 +122,7 @@ var csde = (function csdeMaster(){
                     rect: {
                         class: "magnet input left",
                         magnet: true,
-                        width: _style.magnet.right.width,
+                        width: _style.magnet.left.width,
                         height: this.model.get('size').height/2
                     }
                 }
@@ -134,7 +134,7 @@ var csde = (function csdeMaster(){
                     rect: {
                         class: "magnet output left",
                         magnet: true,
-                        width: _style.magnet.right.width,
+                        width: _style.magnet.left.width,
                         height: this.model.get('size').height/2
                     }
                 }
@@ -333,7 +333,6 @@ var csde = (function csdeMaster(){
         }
     });
 
-
     joint.shapes.dialogue.Base.define('dialogue.Text', {
         size: { width: _style.node.text.width, height: _style.node.text.height },
         ports: { groups: { "output": { position: {args: {
@@ -344,11 +343,12 @@ var csde = (function csdeMaster(){
     });
     joint.shapes.dialogue.TextView = joint.shapes.dialogue.BaseView.extend({
         template:
-            '<div class="node">' +
-                '<button class="delete">x</button>' +
-                '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
-                '<select class="actor" />' +
-                '<textarea class="speech" rows="4" cols="27" placeholder="Speech"></textarea>' +
+            `<div class="node text" height="${_style.node.text.height}">` +
+                '<textarea class="speech" rows="4" cols="27" placeholder="..."></textarea>' +
+                '<div class="left">' +
+                    '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
+                    '<select class="actor" />' +
+                '</div>' +
             '</div>',
 
         initialize: function () {
@@ -481,9 +481,8 @@ var csde = (function csdeMaster(){
     });
     joint.shapes.dialogue.SetView = joint.shapes.dialogue.BaseView.extend({
         template:
-        '<div class="node">' +
-            '<button class="delete">x</button>' +
-            '<input type="text" class="userKey" placeholder="Variable" />' +
+        '<div class="node set">' +
+            '<input type="text" class="userKey" placeholder="Key" />' +
             '<input type="text" class="UserValue" placeholder="Value" />' +
         '</div>',
 
@@ -543,7 +542,7 @@ var csde = (function csdeMaster(){
     });
     joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.MultiView.extend({
         template:
-        '<div class="node multi">' +
+        '<div class="node multi choice">' +
             '<div class="header">' +
                 `<div class="multi header" style="height: ${_style.node.choice.section}px;"><button class="delete">x</button></div>` +
             '</div>' +
@@ -580,7 +579,8 @@ var csde = (function csdeMaster(){
     });
     joint.shapes.dialogue.BranchView = joint.shapes.dialogue.MultiView.extend({
 
-        template: '<div class="node multi">' +
+        template:
+        '<div class="node multi branch">' +
             '<div class="header">' +
                 `<div style="height: ${_style.node.branch.section}px;"><button class="delete">x</button></div>` +
                 `<div style="height: ${_style.node.branch.section}px;"><input type="text" class="userKey" placeholder="Variable" /></div>` +
@@ -787,6 +787,31 @@ var csde = (function csdeMaster(){
             validateMagnet: _validateMagnet,
             snapLinks: { radius: 75 },
         });
+
+        joint.shapes.basic.Generic.define('svg.Gradient', {
+            markup: `<defs>
+    <linearGradient id="CharacterColour">
+    <stop offset="0%" stop-color=" #abbaab " />
+
+    <stop offset="24%" stop-color="#ffffff" />
+        <stop offset="24%" stop-color="#F82" />
+        <stop offset="95%" stop-color="#FF6" />
+        <stop offset="100%" stop-color="#FF8" />
+    </linearGradient>
+
+    <linearGradient id="InputPort">
+            <stop offset="0%" stop-color="#DD3333"></stop>
+            <stop offset="85%" stop-color="#331111"></stop>
+            <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
+        </linearGradient>
+    <linearGradient id="OutPort">
+        <stop offset="0%" stop-color="#DDD" />
+        <stop offset="85%" stop-color="#333" />
+        <stop offset="100%" stop-color="rgba(17,17,17,0.0)" />
+    </linearGradient>
+</defs>`});
+
+        _graph.addCell(new joint.shapes.svg.Gradient());
 
         _addContextMenu(_$container);
 

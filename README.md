@@ -40,13 +40,18 @@ Planned features still in the development pipeline:
 4. When magnet is connected, give feedback that it is (for example, it changes colour).
 5. Conditional branch should auto-complete variables.
 6. Note node. Two textboxes (one small one big) that are collapsible. No input/output.
-7. Multiple pages/tabs.
-8. Character importer.
+7. Change character drop down to auto-complete text field
+8. Multiple pages/tabs.
+9. Glossary editor.
+10. Variable manager.
+11. Character importer.
+12. Prevent overlapping of elements.
+13. Allow selection or box-select of elements.
 
 ## Built Using
 
 * [JointJS](http://jointjs.com/) - A flowchart/diagramming library.
-* [NodeJS](https://nodejs.org/en/) + [Electron](https://electronjs.org/) - For turning a javascript app into a Desktop app.
+* [NodeJS](https://nodejs.org/en/) + [Electron](https://electronjs.org/) - For turning a JavaScript app into a Desktop app.
 
 This project is based on a project called [talkit](https://github.com/rodobodolfo/Talkit) by [rodobodolfo](https://github.com/rodobodolfo).
 

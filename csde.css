@@ -2,6 +2,7 @@ html, body {
 	padding: 0px; margin: 0px;
 	font-family: sans-serif;
 	font-size: small;
+	color: white;
 }
 
 #container {
@@ -16,37 +17,174 @@ html, body {
 
 /* Node styles */
 
-.magnet.input {
-	fill: darkgreen;
-}
-.magnet.output {
-	fill: #2c2f33;
-	fill: darkred;
-}
+/* Generic node styles */
 
 .joint-type-dialogue rect {
-	fill: #101219;
-	stroke: 'none';
-}
-
-input.value.default  {
-	background-color: lightpink; /*rgba(255,0,0,0.1);*/
+   fill: #101219;
+   stroke: 'none';
 }
 
 .node {
 	position: absolute;
+	box-sizing: border-box;
 	background: transparent; /* Handled by the SVG instead. */
 	pointer-events: none;
 	-webkit-user-select: none;
 	z-index: 1;
-	color: #fff;
-	padding: 20px;
+	padding-left: 24px;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
+	border-radius: 0px 10px 10px 0px;
+}
+.node button.delete {
+	 border-radius: 100%;
+	 border:none;
+	 height: 20px;
+	 width: 20px;
+	 overflow: hidden;
+	 text-align: center;
+	 vertical-align: middle;
+ }
+.node input.value.default  {
+	background-color: lightpink; /*rgba(255,0,0,0.1);*/
+}
+.node select, .node input, .node textarea, .node button {
+	pointer-events: all;/* Enable mouse interaction. */
+}
+.node.multi {
+	border-radius: 0px 10px 10px 10px;
 }
 
-.node select, .node input, .node textarea, .node button {
-   /* Enable mouse interaction. */
-   pointer-events: all;
+/* Magnet styles
+****************/
+
+.magnet.input {
+   fill: url(#InputPort);
+ stroke: rgba(255,255,255,0.1);
+   stroke-width: -1px;
+   stroke-linecap: round;
+
+
+
 }
+.magnet.output {
+      fill: url(#OutPort);
+	  stroke: rgba(255,255,255,0.1);
+	  stroke-width: -1px;
+	  stroke-linecap: round;
+
+}
+
+/********************
+* Text Node style:
+*********************/
+
+.joint-type-dialogue-text rect {
+   fill: url(#CharacterColour);
+   stroke: 'none';
+}
+
+.node.text {
+	/* For allowing the content not to overflow due to margins and padding */
+	box-sizing: border-box;
+	/* text-shadow: -1px 0 rgba(0,0,0,0.8), 0 1px rgba(50,50,50,0.8), 1px 0 rgba(50,50,50,0.8), 0 -1px rgba(50,50,50,0.8); */
+	font-family: sans-serif;
+
+}
+.node.text .left {
+	box-sizing: border-box;
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: center;
+	align-items: center;
+	box-shadow: 5px 0px 3px rgba(0,0,0,0.3);
+	height: 100%;
+	border-right: solid grey 1px;
+
+}
+
+.node.text select {
+	background: rgba(0,0,0,0.4);
+	box-shadow: 0px 0px 8px rgba(0,0,0,0.8);
+	color: inherit;
+	text-shadow: inherit;
+	font-size: inherit;
+	border: none;
+	margin-top: 5px;
+	padding: 5px 0;
+}
+
+.node.text select option {
+	background-color: #101219;
+	color: inherit;
+	font-family: inherit;
+	text-shadow: inherit;
+	font-size: inherit;
+}
+
+.node.text textarea {
+	float: right;
+	position: relative;
+	padding: 20px;
+	color: white;
+	font-family: inherit;
+	text-shadow: inherit;
+	font-size: 14px;
+	background: rgba(0,0,0,0.3);
+	border: none;
+	resize: none;
+	height: 100%;
+	width: 80%;
+	box-sizing: border-box; /* for allowing the textarea to align vertically */
+	border-radius: 0px 11px 11px 0px;
+}
+
+.node.text textarea::placeholder{
+	color: rgba(0, 0, 0, 0.4);
+	font-size: 120px;
+	text-align: center;
+}
+
+
+/****************
+* Set Node style:
+*****************/
+
+.node.set {
+	/* For allowing the content not to overflow due to margins and padding */
+	box-sizing: border-box;
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: space-around;
+	align-items: center;
+	padding: 10px 0px; /* Padding at top and bottom */
+}
+
+/*******************
+* Choice Node style:
+********************/
+
+.node.choice {
+
+}
+.header, .choiceContainer, .footer{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.choiceContainer{
+	width: 100%;
+}
+
+.choiceContainer input{
+	/* For allowing the content not to overflow due to margins and padding */
+	box-sizing: border-box;
+	height: 100%;
+	width: 80%;
+}
+/*.footer{
+	display: flex;
+	align-items: center;
+} */
 
 /* Editor tools */
 
@@ -67,6 +205,7 @@ input.value.default  {
 }
 
 .link-tools .tool-remove circle {
+	/* Don't know where this colour is used. */
 	fill: #c0392b;
 }
 

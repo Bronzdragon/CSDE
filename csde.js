@@ -450,34 +450,6 @@ var csde = (function csdeMaster(){
             });
 
             this.listenTo(this.model, 'focus', this.focus);
-
-            console.log("Creating ports.");
-
-            // this.model.input = {
-            //     group: "input",
-            //     markup: "<rect />",
-            //     attrs: {
-            //         rect: {
-            //             class: "magnet input left",
-            //             magnet: true,
-            //             width: _style.magnet.right.width,
-            //             height: _style.node.text.height/2
-            //         }
-            //     }
-            // };
-            // this.model.output = {
-            //     group: "output",
-            //     markup: "<rect />",
-            //     attrs: {
-            //         rect: {
-            //             class: "magnet output left",
-            //             magnet: true,
-            //             width: _style.magnet.right.width,
-            //             height: _style.node.text.height/2
-            //         }
-            //     }
-            // };
-            // this.model.addPorts([this.model.input, this.model.output]);
         },
 
         focus: function() {

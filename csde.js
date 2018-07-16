@@ -19,7 +19,7 @@ var csde = (function csdeMaster(){
 
     const _style = {
         magnet: {
-            left:  { width: 24, height: 48 }, // Height should be unused, and instead should fill up their container top to bottom.
+            left:  { width: 24, height: 50 }, // Height should be unused, and instead should fill up their container top to bottom.
             right: { width: 24, height: 48 },
         },
         node: {
@@ -318,7 +318,7 @@ var csde = (function csdeMaster(){
                 markup: "<rect />",
                 attrs: {
                     rect: {
-                        class: "magnet input left",
+                        class: "magnet input right",
                         magnet: true,
                         width: _style.magnet.left.width,
                         height: _style.magnet.left.height

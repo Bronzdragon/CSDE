@@ -478,7 +478,7 @@ var csde = (function csdeMaster(){
                 let dominantColour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
                 let hsl = null, hex = null;
                 if (!dominantColour) {
-                    console.error("Cannot find colour. Using default");
+                    // console.error("Cannot find colour. Using default");
                     hsl = {hue: 0, saturation: 100, lightness: 100};
                 } else {
                     hsl = {hue: dominantColour.getHsl()[0] * 360, saturation: dominantColour.getHsl()[1] * 100, lightness: dominantColour.getHsl()[2] * 100};

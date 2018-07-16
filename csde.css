@@ -114,8 +114,6 @@ div.node div.choiceContainer, div.node div.header {
 }
 
 .joint-type-dialogue-choice .magnet.input {
-border-bottom: solid 1px black;
-	box-shadow: 0px 5px 3px rgba(0,0,0,0.3);
 }
 
 div.node div.header {
@@ -127,6 +125,19 @@ div.node div.header {
 div.node div.choiceContainer button.remove {
 	height: 100%;
 	width: 24px;
+	background-color: rgb(221, 221, 221);
+border-bottom-color: rgb(221, 221, 221);
+border-bottom-style:outset;
+border-bottom-width: 2px;
+border-left-color:rgb(221, 221, 221);
+border-left-style:outset;
+border-left-width:2px;
+border-right-color:rgb(221, 221, 221);
+border-right-style: outset;
+border-right-width:2px;
+border-top-color: rgb(221, 221, 221);
+border-top-style:outset;
+border-top-width:2px;
 }
 
 div.node div.choiceContainer input {
@@ -138,6 +149,8 @@ div.node div.choiceContainer input {
 	color: white;
 	background: rgba(0,0,0,0.3);
   border: solid 1px #d8d8d8;
+	border-right: none;
+	border-left: none;
   padding: 20px;
   font-size: 14px;
   box-shadow: inset 0px 0px 20px #312e2a;

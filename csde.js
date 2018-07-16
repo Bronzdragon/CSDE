@@ -19,7 +19,7 @@ var csde = (function csdeMaster(){
 
     const _style = {
         magnet: {
-            left:  { width: 24, height: 48 }, // Height should be unused, and instead should fill up their container top to bottom.
+            left:  { width: 24, height: 54 }, // Height should be unused, and instead should fill up their container top to bottom.
             right: { width: 24, height: 48 },
         },
         node: {

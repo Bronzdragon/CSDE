@@ -105,6 +105,18 @@ div.node div.choiceContainer, div.node div.header {
 	flex-direction: column;
 
 }
+.choice .header {
+	background: linear-gradient(#abbaab 0%, #FFF 100%);
+	margin-left: 23px;
+	border-radius: 0px 10px 0px 0px;
+	box-shadow: 0px 5px 3px rgba(0,0,0,0.3);
+	border-bottom: solid grey 1px;
+}
+
+.joint-type-dialogue-choice .magnet.input {
+border-bottom: solid 1px black;
+	box-shadow: 0px 5px 3px rgba(0,0,0,0.3);
+}
 
 div.node div.header {
 	flex-direction: row;
@@ -124,8 +136,8 @@ div.node div.choiceContainer input {
 	height: 100%;
 	width: calc(100% - 24px);
 	color: white;
-  background-color: #101219;
-  border: solid 1px #1b1b1b;
+	background: rgba(0,0,0,0.3);
+  border: solid 1px #d8d8d8;
   padding: 20px;
   font-size: 14px;
   box-shadow: inset 0px 0px 20px #312e2a;
@@ -139,7 +151,7 @@ div.node div.footer div.add-row {
 div.node div.footer div.add-row button.add {
 	width: 100%;
 	height: 100%;
-	background: transparent;
+	background: rgba(0,0,0,0.3);;
 	border-radius: 0px 0px 10px 10px;
 	border: none;
 }
@@ -276,6 +288,11 @@ span.plus {
 /*******************
 * Choice Node style:
 ********************/
+
+.joint-type-dialogue-choice rect {
+fill: url(#ChoiceColour);
+}
+
 
 .node input.value.default {
 	border: none;

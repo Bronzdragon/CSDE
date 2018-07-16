@@ -12,7 +12,7 @@ var csde = (function csdeMaster(){
         //connector: { name: 'rounded' },
     }).connector('jumpover', {
         size: 10,
-        jump: 'arc'
+        jump: 'gap'
     });
 
     const _gridSize = 10;
@@ -341,7 +341,7 @@ var csde = (function csdeMaster(){
     joint.shapes.dialogue.TextView = joint.shapes.dialogue.BaseView.extend({
         template:
             `<div class="node text" height="${_style.node.text.height}">` +
-                '<textarea class="speech" rows="4" cols="27" placeholder="..."></textarea>' +
+                '<textarea class="speech" rows="4" cols="27" placeholder="¶"></textarea>' +
                 '<div class="left">' +
                     '<button class="delete">x</button>' +
                     '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
@@ -800,12 +800,18 @@ var csde = (function csdeMaster(){
         joint.shapes.basic.Generic.define('svg.Gradient', {
             markup: `<defs>
     <linearGradient id="CharacterColour">
-    <stop offset="0%" stop-color=" #abbaab " />
+      <stop offset="0%" stop-color=" #abbaab" />
 
-    <stop offset="24%" stop-color="#ffffff" />
-        <stop offset="24%" stop-color="#F82" />
-        <stop offset="95%" stop-color="#FF6" />
+      <stop offset="24%" stop-color="#ffffff" />
+      <stop offset="24%" stop-color="#F82" />
+      <stop offset="95%" stop-color="#FF6" />
+      <stop offset="100%" stop-color="#FF8" />
+    </linearGradient>
+
+    <linearGradient id="ChoiceColour">
+        <stop offset="0%" stop-color="#F82" />
         <stop offset="100%" stop-color="#FF8" />
+
     </linearGradient>
 
     <linearGradient id="InputPort">

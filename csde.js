@@ -282,7 +282,7 @@ var csde = (function csdeMaster(){
                         height: _style.node.multi.section
                     },
                     use: {
-                        href: "./images/input-output-symbols.svg#output-left",
+                        href: "./images/input-output-symbols.svg#output-right",
                         width: _style.icon.width,
                         height: _style.icon.height,
                         x: (_style.magnet.right.width - _style.icon.width) / 2,
@@ -856,6 +856,22 @@ var csde = (function csdeMaster(){
         <stop offset="85%" stop-color="#333" />
         <stop offset="100%" stop-color="rgba(17,17,17,0.0)" />
     </linearGradient>
+    <linearGradient id="OutPortRight">
+        <stop offset="0%" stop-color="rgba(17,17,17,0.0)" />
+        <stop offset="15%" stop-color="#333" />
+        <stop offset="100%" stop-color="#DDD" />
+    </linearGradient>
+    <linearGradient id="OutPortRightFull">
+        <stop offset="0%" stop-color="#abbaab" />
+        <stop offset="15%" stop-color="#333" />
+        <stop offset="100%" stop-color="#DDD" />
+    </linearGradient>
+    <radialGradient id="OutPortRad"  cx="1.25" cy="1.25" r="1.25">
+        <stop offset="0%" stop-color="#DDD"/>
+        <stop offset="100%" stop-color="#333"/>
+      </radialGradient>
+
+
 </defs>`});
 
         _graph.addCell(new joint.shapes.svg.Gradient());

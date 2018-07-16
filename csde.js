@@ -29,6 +29,10 @@ var csde = (function csdeMaster(){
             'multi':  { width: 300, height: 150, section: 50 },
             'choice': { width: 500, height: 200, section: 50 },
             'branch': { width: 250, height: 200, section: 50 }
+        },
+        icon: {
+            width:  15,
+            height: 15
         }
     };
 
@@ -84,10 +88,6 @@ var csde = (function csdeMaster(){
             // Remove the box when the model gets removed from the graph.
             this.model.on('remove', this.removeBox, this);
 
-            // Not sure if the lines below are required or not.
-            /*this.$box.find('input').on('mousedown click', event => { event.stopPropagation(); });
-            this.$box.find('textarea').on('mousedown click', event => { event.stopPropagation(); });*/
-
             /****
             * This is run after this function and any function calling it ends.
             * Done so that inherited update functions can use variables set in
@@ -116,25 +116,39 @@ var csde = (function csdeMaster(){
         addMagnets: function(){
             this.model.input = {
                 group: "input",
-                markup: "<rect />",
+                markup: "<rect /><use />",
                 attrs: {
                     rect: {
                         class: "magnet input left",
                         magnet: true,
                         width: _style.magnet.left.width,
-                        height: this.model.get('size').height/2
+                        height: this.model.get('size').height / 2
+                    },
+                    use: {
+                        href: "./images/input-output-symbols.svg#input-left",
+                        width: _style.icon.width,
+                        height: _style.icon.height,
+                        x: (_style.magnet.left.width - _style.icon.width) / 2,
+                        y: ((this.model.get('size').height / 2) - _style.icon.height) / 2
                     }
                 }
             };
             this.model.output = {
                 group: "output",
-                markup: "<rect />",
+                markup: "<rect /><use />",
                 attrs: {
                     rect: {
                         class: "magnet output left",
                         magnet: true,
                         width: _style.magnet.left.width,
-                        height: this.model.get('size').height/2
+                        height: this.model.get('size').height / 2
+                    },
+                    use: {
+                        href: "./images/input-output-symbols.svg#output-left",
+                        width: _style.icon.width,
+                        height: _style.icon.height,
+                        x: (_style.magnet.left.width - _style.icon.width) / 2,
+                        y: ((this.model.get('size').height / 2) - _style.icon.height) / 2
                     }
                 }
             };
@@ -259,13 +273,20 @@ var csde = (function csdeMaster(){
             this.model.addPort({
                 id: id,
                 group: "output",
-                markup: "<rect/>",
+                markup: "<rect /><use />",
                 attrs: {
                     rect: {
                         class: "magnet output right",
                         magnet: true,
                         width: _style.magnet.right.width,
                         height: _style.node.multi.section
+                    },
+                    use: {
+                        href: "./images/input-output-symbols.svg#output-left",
+                        width: _style.icon.width,
+                        height: _style.icon.height,
+                        x: (_style.magnet.right.width - _style.icon.width) / 2,
+                        y: (_style.node.multi.section - _style.icon.height) / 2
                     }
                 }
             });
@@ -309,19 +330,30 @@ var csde = (function csdeMaster(){
                     width: style.width - _style.magnet.right.width
                 };
                 this.model.portProp(id, 'attrs/rect', {x: magnetPos.width, y: magnetPos.height});
+                this.model.portProp(id, 'attrs/use', {
+                    x: magnetPos.width + (_style.magnet.right.width - _style.icon.width) / 2,
+                    y: magnetPos.height +(_style.node.multi.section - _style.icon.height) / 2
+                });
             }
 
         },
         addMagnets: function(){
             this.model.input = {
                 group: "input",
-                markup: "<rect />",
+                markup: "<rect /><use />",
                 attrs: {
                     rect: {
-                        class: "magnet input right",
+                        class: "magnet input left",
                         magnet: true,
                         width: _style.magnet.left.width,
                         height: _style.magnet.left.height
+                    },
+                    use: {
+                        href: "./images/input-output-symbols.svg#input-left",
+                        width: _style.icon.width,
+                        height: _style.icon.height,
+                        x: (_style.magnet.left.width - _style.icon.width) / 2,
+                        y: (_style.magnet.left.height - _style.icon.height) / 2
                     }
                 }
             };

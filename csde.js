@@ -19,8 +19,13 @@ var csde = (function csdeMaster(){
 
     const _style = {
         magnet: {
+<<<<<<< HEAD
             left:  { width: 24, height: 54 }, // Height should be unused, and instead should fill up their container top to bottom.
             right: { width: 24, height: 48 },
+=======
+            left:  { width: 24, height: 50 }, // Height should be unused, and instead should fill up their container top to bottom.
+            right: { width: 24, height: 48 }
+>>>>>>> 048254587fc04bfa70982a2509824a5858963e11
         },
         node: {
             'base':   { width: 250, height: 150 },
@@ -318,7 +323,7 @@ var csde = (function csdeMaster(){
                 markup: "<rect />",
                 attrs: {
                     rect: {
-                        class: "magnet input left",
+                        class: "magnet input right",
                         magnet: true,
                         width: _style.magnet.left.width,
                         height: _style.magnet.left.height
@@ -646,7 +651,7 @@ var csde = (function csdeMaster(){
         // If we're connecting to an Output node, allow only one connection.
         let isOutput = magnetTarget.getAttribute("class").includes("output");
         if (isOutput) {
-            let portId = magnetTarget.parentNode.getAttribute('port');
+            let portId = magnetTarget.getAttribute('port');
             let targetLinks = _graph.getConnectedLinks(cellViewTarget.model);
             let portHasConnections = targetLinks.some(link => {
                 if (linkView.model == link) return false; // Discount the current connection.
@@ -661,7 +666,7 @@ var csde = (function csdeMaster(){
 
     function _validateMagnet(cellView, magnet) {
         let links = _graph.getConnectedLinks(cellView.model);
-        let portId = magnet.parentNode.getAttribute('port');
+        let portId = magnet.getAttribute('port');
 
         let hasConnection = links.some(
             link => link.get('source').port === portId || link.get('target').port === portId

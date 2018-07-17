@@ -811,8 +811,7 @@ var csde = (function csdeMaster(){
         });
     }
 
-    function initialize({element:baseElement , width = 800, height = 600}) {
-
+    function initialize(baseElement, {width = 800, height = 600} = {}) {
         if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
         _$container = baseElement;
         _$container.$paper = baseElement.find('div#paper');
@@ -855,48 +854,51 @@ var csde = (function csdeMaster(){
         });
 
         joint.shapes.basic.Generic.define('svg.Gradient', {
-            markup: `<defs>
+            markup: `
+<defs>
     <linearGradient id="CharacterColour">
-      <stop offset="0%" stop-color=" #abbaab" />
+        <stop offset="0%" stop-color=" #abbaab" />
 
-      <stop offset="24%" stop-color="#ffffff" />
-      <stop offset="24%" stop-color="#F82" />
-      <stop offset="95%" stop-color="#FF6" />
-      <stop offset="100%" stop-color="#FF8" />
+        <stop offset="24%" stop-color="#ffffff" />
+        <stop offset="24%" stop-color="#F82" />
+
+        <stop offset="95%" stop-color="#FF6" />
+        <stop offset="100%" stop-color="#FF8" />
     </linearGradient>
 
     <linearGradient id="ChoiceColour">
         <stop offset="0%" stop-color="#F82" />
         <stop offset="100%" stop-color="#FF8" />
-
     </linearGradient>
 
     <linearGradient id="InputPort">
-            <stop offset="0%" stop-color="#DD3333"></stop>
-            <stop offset="85%" stop-color="#331111"></stop>
-            <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
-        </linearGradient>
+        <stop offset="0%" stop-color="#D33"></stop>
+        <stop offset="85%" stop-color="#311"></stop>
+        <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
+    </linearGradient>
+
     <linearGradient id="OutPort">
         <stop offset="0%" stop-color="#DDD" />
         <stop offset="85%" stop-color="#333" />
         <stop offset="100%" stop-color="rgba(17,17,17,0.0)" />
     </linearGradient>
+
     <linearGradient id="OutPortRight">
         <stop offset="0%" stop-color="rgba(17,17,17,0.0)" />
         <stop offset="15%" stop-color="#333" />
         <stop offset="100%" stop-color="#DDD" />
     </linearGradient>
+
     <linearGradient id="OutPortRightFull">
         <stop offset="0%" stop-color="#abbaab" />
         <stop offset="15%" stop-color="#333" />
         <stop offset="100%" stop-color="#DDD" />
     </linearGradient>
+    
     <radialGradient id="OutPortRad"  cx="1.25" cy="1.25" r="1.25">
         <stop offset="0%" stop-color="#DDD"/>
         <stop offset="100%" stop-color="#333"/>
-      </radialGradient>
-
-
+    </radialGradient>
 </defs>`});
 
         _graph.addCell(new joint.shapes.svg.Gradient());

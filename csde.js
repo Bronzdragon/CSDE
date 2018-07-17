@@ -2,6 +2,8 @@
 
 var csde = (function csdeMaster(){
 
+    let _globalLinkValue = null;
+
     let _$container = null;
     let _graph = null;
     let _characters = resetCharacters();
@@ -710,7 +712,7 @@ var csde = (function csdeMaster(){
         _graph.addCell(new nodeType ({ position: location }));
     }
 
-    function _addContextMenu(element) {
+    function _addContextMenus(element) {
         $.contextMenu({
             selector: 'div#paper',
             callback: function (itemKey, opt, rootMenu, originalEvent) {
@@ -721,39 +723,26 @@ var csde = (function csdeMaster(){
                     y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
                 };
 
-                switch (itemKey) {
-                    case 'text':
-                        type = joint.shapes.dialogue.Text;
-                        break;
-                    case 'choice':
-                        type = joint.shapes.dialogue.Choice;
-                        break;
-                    case 'set':
-                        type = joint.shapes.dialogue.Set;
-                        break;
-                    case 'branch':
-                        type = joint.shapes.dialogue.Branch;
-                        break;
-                    case 'base':
-                        type = joint.shapes.dialogue.Base;
-                        break;
-                    case 'multi':
-                        type = joint.shapes.dialogue.Multi;
+                switch (itemKey) { // If we've selected any of the node types, add that node type to the graph.
+                    case 'Text':
+                    case 'Choice':
+                    case 'Set':
+                    case 'Branch':
+                    case 'Base':
+                    case 'Multi':
+                        _addNodeToGraph(joint.shapes.dialogue[itemKey], pos);
                         break;
                     default:
-                        console.log(TODO);
+                        console.log("File management is not yet implemented.");
                         return;
                 }
-                _addNodeToGraph(type, pos);
-
             }, items: {
-                //separator: { "type": "cm_separator" },
-                'text': {name: 'Speech'},
-                'choice': {name: 'Choice'},
-                'set': {name: 'Set flag'},
-                'branch': {name: 'Conditional branch'},
-                'base': {name: 'DEBUG - base'},
-                'multi': {name: 'DEBUG - multi'},
+                'Text': {name: 'Speech'},
+                'Choice': {name: 'Choice'},
+                'Set': {name: 'Set flag'},
+                'Branch': {name: 'Conditional branch'},
+                'Base': {name: 'DEBUG - base'},
+                'Multi': {name: 'DEBUG - multi'},
                 'data': {
                     name: 'Data management',
                     items: {
@@ -764,8 +753,28 @@ var csde = (function csdeMaster(){
                         'load': {name: "Manual Load"},
                         'new': {name: 'Open blank file'}
                     }
-                },
-                //separator2: { "type": "cm_separator" }
+                }
+            }
+        });
+
+        $.contextMenu({
+            selector: 'div#drop-menu',
+            callback: function (itemKey, opt, rootMenu, originalEvent) {
+                let pos = {
+                    x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
+                    y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
+                };
+
+                newElement = new joint.shapes.dialogue[itemKey]({position: pos});
+                _graph.addCell(newElement);
+                _globalLinkValue.target({id: newElement.id, port: newElement.getPorts().find(element => element.group === "input").id});
+
+                _globalLinkValue = null;
+            }, items: {
+                'Text': {name: 'Speech'},
+                'Choice': {name: 'Choice'},
+                'Set': {name: 'Set flag'},
+                'Branch': {name: 'Conditional branch'}
             }
         });
     }
@@ -820,6 +829,14 @@ var csde = (function csdeMaster(){
             validateConnection: _validateConnection,
             validateMagnet: _validateMagnet,
             snapLinks: { radius: 75 },
+        });
+
+        _paper.on('link:pointerup', (cellView, evt, x, y) => {
+            if(cellView.model.getTargetElement()) return; // If there is a target, we're not interested.
+            // Insert menu spanwning code here.
+            console.log(x, y);
+            _globalLinkValue = cellView.model;
+            $('div#drop-menu').contextMenu({x: x, y: y});
         });
 
         /* Might cause performance issues on large graphs. Will have to investigate */
@@ -884,7 +901,7 @@ var csde = (function csdeMaster(){
 
         _graph.addCell(new joint.shapes.svg.Gradient());
 
-        _addContextMenu(_$container);
+        _addContextMenus(_$container);
 
         _registerPanning(_paper, _$container);
     }

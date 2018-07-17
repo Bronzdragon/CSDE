@@ -35,18 +35,17 @@ Currently, no tests are set up. Sorry.
 
 Planned features still in the development pipeline:
 1. Pick a license.
-2. Colouring the speech bubbles per character (based on the avatar, if possible).
-3. When automatically creating a text node, try to set the actor to the previous conversation participant (if there is one).
-4. When magnet is connected, give feedback that it is (for example, it changes colour).
-5. Conditional branch should auto-complete variables.
-6. Note node. Two textboxes (one small one big) that are collapsible. No input/output.
-7. Next page on paper edges OR dynamically adjust paper size
-8. Multiple pages/tabs.
-9. Glossary editor.
-10. Variable manager.
-11. Character importer.
-12. Prevent overlapping of elements.
-13. Allow selection or box-select of elements.
+2. When automatically creating a text node, try to set the actor to the previous conversation participant (if there is one).
+3. When magnet is connected, give feedback that it is (for example, it changes colour).
+4. Conditional branch should auto-complete variables.
+5. A Note type node. Two textboxes (one small one big) that are collapsible. No input/output.
+6. Next page on paper edges OR dynamically adjust paper size
+7. Multiple pages/tabs.
+8. Glossary editor.
+9. Variable manager.
+10. Character importer.
+11. Prevent overlapping of elements.
+12. Allow selection or box-select of elements.
 
 ## Built Using
 

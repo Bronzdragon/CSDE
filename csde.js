@@ -811,8 +811,7 @@ var csde = (function csdeMaster(){
         });
     }
 
-    function initialize({element:baseElement , width = 800, height = 600}) {
-
+    function initialize(baseElement, {width = 800, height = 600} = {}) {
         if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
         _$container = baseElement;
         _$container.$paper = baseElement.find('div#paper');

@@ -450,34 +450,6 @@ var csde = (function csdeMaster(){
             });
 
             this.listenTo(this.model, 'focus', this.focus);
-
-            console.log("Creating ports.");
-
-            // this.model.input = {
-            //     group: "input",
-            //     markup: "<rect />",
-            //     attrs: {
-            //         rect: {
-            //             class: "magnet input left",
-            //             magnet: true,
-            //             width: _style.magnet.right.width,
-            //             height: _style.node.text.height/2
-            //         }
-            //     }
-            // };
-            // this.model.output = {
-            //     group: "output",
-            //     markup: "<rect />",
-            //     attrs: {
-            //         rect: {
-            //             class: "magnet output left",
-            //             magnet: true,
-            //             width: _style.magnet.right.width,
-            //             height: _style.node.text.height/2
-            //         }
-            //     }
-            // };
-            // this.model.addPorts([this.model.input, this.model.output]);
         },
 
         focus: function() {
@@ -794,8 +766,7 @@ var csde = (function csdeMaster(){
         });
     }
 
-    function initialize({element:baseElement , width = 800, height = 600}) {
-
+    function initialize(baseElement, {width = 800, height = 600} = {}) {
         if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
         _$container = baseElement;
         _$container.$paper = baseElement.find('div#paper');

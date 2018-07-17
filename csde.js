@@ -673,34 +673,41 @@ var csde = (function csdeMaster(){
     	if (magnetSource == magnetTarget || cellViewSource == cellViewTarget)
     		return false;
 
+
         // Prevent inputs/outputs from linking to themselves
-        let sourceType = magnetSource.getAttribute('port-group');
-        if ($(magnetTarget).hasClass(sourceType))
+        let targetType = magnetTarget.getAttribute("class").includes("output") ? "output" : "input";
+        if (magnetSource.getAttribute('port-group') === targetType)
             return false;
 
-        // If we're connecting to an Output node, allow only one connection.
-        let isOutput = magnetTarget.getAttribute("class").includes("output");
-        if (isOutput) {
-            let portId = magnetTarget.getAttribute('port');
-            let targetLinks = _graph.getConnectedLinks(cellViewTarget.model);
-            let portHasConnections = targetLinks.some(link => {
-                if (linkView.model == link) return false; // Discount the current connection.
-                return (link.get('source').port === portId ||
-                        link.get('target').port === portId);
-            });
-            if (portHasConnections) return false;
-        }
+        // Allow many inputs, but only one output
+        if (targetType == "input")
+            return true;
 
-        return true;
+        // Check for link count. Only allow a connection if there's only one.
+        let portId = magnetTarget.parentElement.getAttribute('port');
+        let targetLinks = _graph.getConnectedLinks(cellViewTarget.model);
+        let portHasConnections = targetLinks.some(link => {
+            if (linkView.model == link) return false; // Discount the current connection.
+            return (link.get('source').port === portId ||
+                    link.get('target').port === portId);
+        });
+
+        return !portHasConnections;
     }
 
     function _validateMagnet(cellView, magnet) {
+        let isOutput = magnet.getAttribute("class").includes("output");
+        if (!isOutput) {
+            return true;
+        }
+
         let links = _graph.getConnectedLinks(cellView.model);
-        let portId = magnet.getAttribute('port');
+        let portId = magnet.parentElement.getAttribute('port');
 
         let hasConnection = links.some(
             link => link.get('source').port === portId || link.get('target').port === portId
         );
+
         return !hasConnection;
     }
 

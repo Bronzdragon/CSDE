@@ -461,6 +461,21 @@ var csde = (function csdeMaster(){
         updateBox: function() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
+            // this.model.attr({
+            //     rect: {
+            //         fill: {
+            //             type: 'linearGradient',
+            //             stops: [
+            //                 { offset: '0%', color: '#e67e22' },
+            //                 { offset: '20%', color: '#d35400' },
+            //                 { offset: '40%', color: '#e74c3c' },
+            //                 { offset: '60%', color: '#c0392b' },
+            //                 { offset: '80%', color: '#f39c12' }
+            //             ]
+            //         }
+            //     }
+            // });
+
             let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
             if (!selectedChar) { selectedChar = _characters.find(element => element.name === 'unknown'); }
 
@@ -472,6 +487,27 @@ var csde = (function csdeMaster(){
 
             this.$box.$character_select.val(selectedChar.name);
             this.$box.$speech.val(this.model.get('speech'));
+
+            Vibrant.from(`images\\characters\\${selectedChar.url}`).getPalette().then(palette => {
+                let color = palette.Vibrant || palette.DarkVibrant || palette.lightVibrant || palette.Muted || palette.DarkMuted || palette.lightMuted;
+
+                this.model.attr({
+                    rect: {
+                        fill: color.getHex()
+                    }
+                });
+            }).catch(error => {
+                console.error("Could not resolve colour: ", error);
+                this.model.attr({
+                    rect: {
+                        fill: '#FFF'
+                    }
+                });
+            });
+
+
+
+
         }
     });
 

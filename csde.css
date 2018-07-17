@@ -55,7 +55,8 @@ html, body {
  * Generic node styles *
  ***********************/
 
-.joint-type-dialogue rect {
+.joint-type-dialogue-set rect, .joint-type-dialogue-branch rect {
+	/* Choice and text are set elsewhere */
    fill: #101219;
    stroke: 'none';
 }
@@ -119,7 +120,7 @@ div.node div.choiceContainer, div.node div.header {
 }
 
 .joint-type-dialogue-choice .magnet.output.right {
-fill: url(#OutPortRightFull);
+	fill: url(#OutPortRightFull);
 }
 
 div.node div.header {
@@ -216,7 +217,7 @@ span.plus {
  ********************/
 
 .joint-type-dialogue-text rect {
-	fill: url(#CharacterColour);
+	fill: auto;/* url(#CharacterColour);*/
 	stroke: 'none';
 }
 
@@ -312,7 +313,7 @@ span.plus {
 ********************/
 
 .joint-type-dialogue-choice rect {
-fill: url(#ChoiceColour);
+	fill: url(#ChoiceColour);
 }
 
 

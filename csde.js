@@ -376,7 +376,7 @@ var csde = (function csdeMaster(){
                 '<textarea class="speech" rows="4" cols="27" placeholder="¶"></textarea>' +
                 '<div class="left">' +
                     '<button class="delete">x</button>' +
-                    '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
+                    '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.webp" />' +
                     '<select class="actor" />' +
                 '</div>' +
             '</div>',
@@ -896,7 +896,7 @@ var csde = (function csdeMaster(){
     }
 
     function resetCharacters(){
-        return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
+        return addCharacter({name: 'unknown', url: 'unknown.webp'}, []);
     }
 
     return {

@@ -2,8 +2,6 @@
 
 var csde = (function csdeMaster(){
 
-    let _globalLinkValue = null;
-
     let _$container = null;
     let _graph = null;
     let _characters = resetCharacters();
@@ -378,7 +376,7 @@ var csde = (function csdeMaster(){
                 '<textarea class="speech" rows="4" cols="27" placeholder="¶"></textarea>' +
                 '<div class="left">' +
                     '<button class="delete">x</button>' +
-                    '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.webp" />' +
+                    '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
                     '<select class="actor" />' +
                 '</div>' +
             '</div>',
@@ -452,6 +450,34 @@ var csde = (function csdeMaster(){
             });
 
             this.listenTo(this.model, 'focus', this.focus);
+
+            console.log("Creating ports.");
+
+            // this.model.input = {
+            //     group: "input",
+            //     markup: "<rect />",
+            //     attrs: {
+            //         rect: {
+            //             class: "magnet input left",
+            //             magnet: true,
+            //             width: _style.magnet.right.width,
+            //             height: _style.node.text.height/2
+            //         }
+            //     }
+            // };
+            // this.model.output = {
+            //     group: "output",
+            //     markup: "<rect />",
+            //     attrs: {
+            //         rect: {
+            //             class: "magnet output left",
+            //             magnet: true,
+            //             width: _style.magnet.right.width,
+            //             height: _style.node.text.height/2
+            //         }
+            //     }
+            // };
+            // this.model.addPorts([this.model.input, this.model.output]);
         },
 
         focus: function() {
@@ -460,21 +486,6 @@ var csde = (function csdeMaster(){
 
         updateBox: function() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
-
-            // this.model.attr({
-            //     rect: {
-            //         fill: {
-            //             type: 'linearGradient',
-            //             stops: [
-            //                 { offset: '0%', color: '#e67e22' },
-            //                 { offset: '20%', color: '#d35400' },
-            //                 { offset: '40%', color: '#e74c3c' },
-            //                 { offset: '60%', color: '#c0392b' },
-            //                 { offset: '80%', color: '#f39c12' }
-            //             ]
-            //         }
-            //     }
-            // });
 
             let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
             if (!selectedChar) { selectedChar = _characters.find(element => element.name === 'unknown'); }
@@ -487,27 +498,6 @@ var csde = (function csdeMaster(){
 
             this.$box.$character_select.val(selectedChar.name);
             this.$box.$speech.val(this.model.get('speech'));
-
-            Vibrant.from(`images\\characters\\${selectedChar.url}`).getPalette().then(palette => {
-                let color = palette.Vibrant || palette.DarkVibrant || palette.lightVibrant || palette.Muted || palette.DarkMuted || palette.lightMuted;
-
-                this.model.attr({
-                    rect: {
-                        fill: color.getHex()
-                    }
-                });
-            }).catch(error => {
-                console.error("Could not resolve colour: ", error);
-                this.model.attr({
-                    rect: {
-                        fill: '#FFF'
-                    }
-                });
-            });
-
-
-
-
         }
     });
 
@@ -719,7 +709,7 @@ var csde = (function csdeMaster(){
         _graph.addCell(new nodeType ({ position: location }));
     }
 
-    function _addContextMenus(element) {
+    function _addContextMenu(element) {
         $.contextMenu({
             selector: 'div#paper',
             callback: function (itemKey, opt, rootMenu, originalEvent) {
@@ -730,26 +720,39 @@ var csde = (function csdeMaster(){
                     y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
                 };
 
-                switch (itemKey) { // If we've selected any of the node types, add that node type to the graph.
-                    case 'Text':
-                    case 'Choice':
-                    case 'Set':
-                    case 'Branch':
-                    case 'Base':
-                    case 'Multi':
-                        _addNodeToGraph(joint.shapes.dialogue[itemKey], pos);
+                switch (itemKey) {
+                    case 'text':
+                        type = joint.shapes.dialogue.Text;
+                        break;
+                    case 'choice':
+                        type = joint.shapes.dialogue.Choice;
+                        break;
+                    case 'set':
+                        type = joint.shapes.dialogue.Set;
+                        break;
+                    case 'branch':
+                        type = joint.shapes.dialogue.Branch;
+                        break;
+                    case 'base':
+                        type = joint.shapes.dialogue.Base;
+                        break;
+                    case 'multi':
+                        type = joint.shapes.dialogue.Multi;
                         break;
                     default:
-                        console.log("File management is not yet implemented.");
+                        console.log(TODO);
                         return;
                 }
+                _addNodeToGraph(type, pos);
+
             }, items: {
-                'Text': {name: 'Speech'},
-                'Choice': {name: 'Choice'},
-                'Set': {name: 'Set flag'},
-                'Branch': {name: 'Conditional branch'},
-                'Base': {name: 'DEBUG - base'},
-                'Multi': {name: 'DEBUG - multi'},
+                //separator: { "type": "cm_separator" },
+                'text': {name: 'Speech'},
+                'choice': {name: 'Choice'},
+                'set': {name: 'Set flag'},
+                'branch': {name: 'Conditional branch'},
+                'base': {name: 'DEBUG - base'},
+                'multi': {name: 'DEBUG - multi'},
                 'data': {
                     name: 'Data management',
                     items: {
@@ -760,28 +763,8 @@ var csde = (function csdeMaster(){
                         'load': {name: "Manual Load"},
                         'new': {name: 'Open blank file'}
                     }
-                }
-            }
-        });
-
-        $.contextMenu({
-            selector: 'div#drop-menu',
-            callback: function (itemKey, opt, rootMenu, originalEvent) {
-                let pos = {
-                    x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
-                    y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
-                };
-
-                newElement = new joint.shapes.dialogue[itemKey]({position: pos});
-                _graph.addCell(newElement);
-                _globalLinkValue.target({id: newElement.id, port: newElement.getPorts().find(element => element.group === "input").id});
-
-                _globalLinkValue = null;
-            }, items: {
-                'Text': {name: 'Speech'},
-                'Choice': {name: 'Choice'},
-                'Set': {name: 'Set flag'},
-                'Branch': {name: 'Conditional branch'}
+                },
+                //separator2: { "type": "cm_separator" }
             }
         });
     }
@@ -811,7 +794,8 @@ var csde = (function csdeMaster(){
         });
     }
 
-    function initialize(baseElement, {width = 800, height = 600} = {}) {
+    function initialize({element:baseElement , width = 800, height = 600}) {
+
         if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
         _$container = baseElement;
         _$container.$paper = baseElement.find('div#paper');
@@ -838,14 +822,6 @@ var csde = (function csdeMaster(){
             snapLinks: { radius: 75 },
         });
 
-        _paper.on('link:pointerup', (cellView, evt, x, y) => {
-            if(cellView.model.getTargetElement()) return; // If there is a target, we're not interested.
-            // Insert menu spanwning code here.
-            console.log(x, y);
-            _globalLinkValue = cellView.model;
-            $('div#drop-menu').contextMenu({x: x, y: y});
-        });
-
         /* Might cause performance issues on large graphs. Will have to investigate */
         _graph.on('change:position add', function(cell) {
             for (let link of _graph.getLinks()) {
@@ -854,56 +830,53 @@ var csde = (function csdeMaster(){
         });
 
         joint.shapes.basic.Generic.define('svg.Gradient', {
-            markup: `
-<defs>
+            markup: `<defs>
     <linearGradient id="CharacterColour">
-        <stop offset="0%" stop-color=" #abbaab" />
+      <stop offset="0%" stop-color=" #abbaab" />
+      <stop offset="24%" stop-color="#ffffff" />
 
-        <stop offset="24%" stop-color="#ffffff" />
-        <stop offset="24%" stop-color="#F82" />
-
-        <stop offset="95%" stop-color="#FF6" />
-        <stop offset="100%" stop-color="#FF8" />
+      <stop offset="24%" stop-color="#F82" />
+      <stop offset="95%" stop-color="#FF6" />
+      <stop offset="100%" stop-color="#FF8" />
     </linearGradient>
 
     <linearGradient id="ChoiceColour">
         <stop offset="0%" stop-color="#F82" />
         <stop offset="100%" stop-color="#FF8" />
+
     </linearGradient>
 
     <linearGradient id="InputPort">
-        <stop offset="0%" stop-color="#D33"></stop>
-        <stop offset="85%" stop-color="#311"></stop>
-        <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
-    </linearGradient>
-
+            <stop offset="0%" stop-color="#DD3333"></stop>
+            <stop offset="85%" stop-color="#331111"></stop>
+            <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
+        </linearGradient>
     <linearGradient id="OutPort">
         <stop offset="0%" stop-color="#DDD" />
         <stop offset="85%" stop-color="#333" />
         <stop offset="100%" stop-color="rgba(17,17,17,0.0)" />
     </linearGradient>
-
     <linearGradient id="OutPortRight">
         <stop offset="0%" stop-color="rgba(17,17,17,0.0)" />
         <stop offset="15%" stop-color="#333" />
         <stop offset="100%" stop-color="#DDD" />
     </linearGradient>
-
     <linearGradient id="OutPortRightFull">
         <stop offset="0%" stop-color="#abbaab" />
         <stop offset="15%" stop-color="#333" />
         <stop offset="100%" stop-color="#DDD" />
     </linearGradient>
-    
     <radialGradient id="OutPortRad"  cx="1.25" cy="1.25" r="1.25">
         <stop offset="0%" stop-color="#DDD"/>
         <stop offset="100%" stop-color="#333"/>
-    </radialGradient>
+      </radialGradient>
+
+
 </defs>`});
 
         _graph.addCell(new joint.shapes.svg.Gradient());
 
-        _addContextMenus(_$container);
+        _addContextMenu(_$container);
 
         _registerPanning(_paper, _$container);
     }
@@ -923,7 +896,7 @@ var csde = (function csdeMaster(){
     }
 
     function resetCharacters(){
-        return addCharacter({name: 'unknown', url: 'unknown.webp'}, []);
+        return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
     }
 
     return {

@@ -1,5 +1,7 @@
 #avatars (which are project specific)
-images/characters/*.*
+images/characters.png/*.*
+images/batch.bat
+images/cwebp.exe
 
 # Logs
 logs

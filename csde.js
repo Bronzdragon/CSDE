@@ -470,6 +470,35 @@ var csde = (function csdeMaster(){
 
             this.$box.$character_select.val(selectedChar.name);
             this.$box.$speech.val(this.model.get('speech'));
+
+            // console.dir(Vibrant);
+            Vibrant.from(`images\\characters\\${selectedChar.url}`).getPalette().then(palette => {
+                let dominantColour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
+                let hsl = null, hex = null;
+                if (!dominantColour) {
+                    console.error("Cannot find colour. Using default");
+                    hsl = {hue: 0, saturation: 100, lightness: 100};
+                } else {
+                    hsl = {hue: dominantColour.getHsl()[0] * 360, saturation: dominantColour.getHsl()[1] * 100, lightness: dominantColour.getHsl()[2] * 100};
+                    hsl.saturation = (100 - hsl.saturation) / 2 + hsl.saturation;
+                    hsl.lightness = hsl.lightness / 1.2;
+                }
+
+                this.model.attr({
+                    rect: {
+                        fill: {
+                            type: 'linearGradient',
+                            stops: [
+                                { offset: '0%', color: '#abbaab' },
+                                { offset: '24%', color: '#ffffff' },
+                                { offset: '24.01%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${hsl.lightness}%)` },
+                                { offset: '95%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${(100 - hsl.lightness) / 2 + hsl.lightness}%)` },
+                                { offset: '100%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${(100 - hsl.lightness) / 1.8 + hsl.lightness}%)` }
+                            ]
+                        }
+                    }
+                });
+            });
         }
     });
 
@@ -801,7 +830,8 @@ var csde = (function csdeMaster(){
         });
 
         joint.shapes.basic.Generic.define('svg.Gradient', {
-            markup: `<defs>
+            markup:
+`<defs>
     <linearGradient id="CharacterColour">
       <stop offset="0%" stop-color=" #abbaab" />
       <stop offset="24%" stop-color="#ffffff" />
@@ -814,35 +844,42 @@ var csde = (function csdeMaster(){
     <linearGradient id="ChoiceColour">
         <stop offset="0%" stop-color="#F82" />
         <stop offset="100%" stop-color="#FF8" />
-
     </linearGradient>
 
     <linearGradient id="InputPort">
-            <stop offset="0%" stop-color="#DD3333"></stop>
-            <stop offset="85%" stop-color="#331111"></stop>
-            <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
-        </linearGradient>
+        <stop offset="0%" stop-color="#D33" />
+        <stop offset="85%" stop-color="#311" />
+        <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
+    </linearGradient>
+
+    <linearGradient id="InputPort">
+        <stop offset="0%" stop-color="#DD3333"></stop>
+        <stop offset="85%" stop-color="#331111"></stop>
+        <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
+    </linearGradient>
+
     <linearGradient id="OutPort">
         <stop offset="0%" stop-color="#DDD" />
         <stop offset="85%" stop-color="#333" />
         <stop offset="100%" stop-color="rgba(17,17,17,0.0)" />
     </linearGradient>
+
     <linearGradient id="OutPortRight">
         <stop offset="0%" stop-color="rgba(17,17,17,0.0)" />
         <stop offset="15%" stop-color="#333" />
         <stop offset="100%" stop-color="#DDD" />
     </linearGradient>
+
     <linearGradient id="OutPortRightFull">
         <stop offset="0%" stop-color="#abbaab" />
         <stop offset="15%" stop-color="#333" />
         <stop offset="100%" stop-color="#DDD" />
     </linearGradient>
+
     <radialGradient id="OutPortRad"  cx="1.25" cy="1.25" r="1.25">
         <stop offset="0%" stop-color="#DDD"/>
         <stop offset="100%" stop-color="#333"/>
       </radialGradient>
-
-
 </defs>`});
 
         _graph.addCell(new joint.shapes.svg.Gradient());

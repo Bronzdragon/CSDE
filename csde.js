@@ -463,42 +463,68 @@ var csde = (function csdeMaster(){
             let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
             if (!selectedChar) { selectedChar = _characters.find(element => element.name === 'unknown'); }
 
-            this.$box.$img.attr({
-                'src': `images\\characters\\${selectedChar.url}`,
-                'title': selectedChar.name,
-                'alt': selectedChar.name
+            let imageURL = `images\\characters\\${selectedChar.url}`;
+            this._testImage(imageURL).catch(error => {
+                imageURL = "images\\characters\\unknown.png";
+            }).then(() => {
+                this.$box.$img.attr({
+                    'src': imageURL,
+                    'title': selectedChar.name,
+                    'alt': selectedChar.name
+                });
+
+                Vibrant.from(imageURL).getPalette().then(palette => {
+                    let dominantColour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
+                    let hsl = null, hex = null;
+                    if (!dominantColour) {
+                        // console.error("Cannot find colour. Using default");
+                        hsl = {hue: 0, saturation: 100, lightness: 100};
+                    } else {
+                        hsl = {hue: dominantColour.getHsl()[0] * 360, saturation: dominantColour.getHsl()[1] * 100, lightness: dominantColour.getHsl()[2] * 100};
+                        hsl.saturation = (100 - hsl.saturation) / 2 + hsl.saturation;
+                        hsl.lightness = hsl.lightness / 1.2;
+                    }
+
+                    this.model.attr({
+                        rect: {
+                            fill: {
+                                type: 'linearGradient',
+                                stops: [
+                                    { offset: '0%', color: '#abbaab' },
+                                    { offset: '24%', color: '#ffffff' },
+                                    { offset: '24.01%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${hsl.lightness}%)` },
+                                    { offset: '95%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${(100 - hsl.lightness) / 2 + hsl.lightness}%)` },
+                                    { offset: '100%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${(100 - hsl.lightness) / 1.8 + hsl.lightness}%)` }
+                                ]
+                            }
+                        }
+                    });
+                });
             });
 
             this.$box.$character_select.val(selectedChar.name);
             this.$box.$speech.val(this.model.get('speech'));
+        },
 
-            // console.dir(Vibrant);
-            Vibrant.from(`images\\characters\\${selectedChar.url}`).getPalette().then(palette => {
-                let dominantColour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
-                let hsl = null, hex = null;
-                if (!dominantColour) {
-                    // console.error("Cannot find colour. Using default");
-                    hsl = {hue: 0, saturation: 100, lightness: 100};
-                } else {
-                    hsl = {hue: dominantColour.getHsl()[0] * 360, saturation: dominantColour.getHsl()[1] * 100, lightness: dominantColour.getHsl()[2] * 100};
-                    hsl.saturation = (100 - hsl.saturation) / 2 + hsl.saturation;
-                    hsl.lightness = hsl.lightness / 1.2;
-                }
-
-                this.model.attr({
-                    rect: {
-                        fill: {
-                            type: 'linearGradient',
-                            stops: [
-                                { offset: '0%', color: '#abbaab' },
-                                { offset: '24%', color: '#ffffff' },
-                                { offset: '24.01%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${hsl.lightness}%)` },
-                                { offset: '95%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${(100 - hsl.lightness) / 2 + hsl.lightness}%)` },
-                                { offset: '100%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${(100 - hsl.lightness) / 1.8 + hsl.lightness}%)` }
-                            ]
-                        }
-                    }
-                });
+        _testImage: function(url, timeoutT) {
+            return new Promise(function (resolve, reject) {
+                var timeout = timeoutT || 5000;
+                var timer, img = new Image();
+                img.onerror = img.onabort = function () {
+                    clearTimeout(timer);
+                    reject("Not a valid image");
+                };
+                img.onload = function () {
+                    clearTimeout(timer);
+                    resolve("Success");
+                };
+                timer = setTimeout(function () {
+                    // reset .src to invalid URL so it stops previous
+                    // loading, but doesn't trigger new load
+                    img.src = "//!!!!/test.jpg";
+                    reject("Timeout occured");
+                }, timeout);
+                img.src = url;
             });
         }
     });

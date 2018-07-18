@@ -46,13 +46,21 @@ Planned features still in the development pipeline:
 10. Character importer.
 11. Prevent overlapping of elements.
 12. Allow selection or box-select of elements.
+    * Deletion of selected elements
+    * Copy/paste of selected items
+    * Move multiple selected elements.
+13. Per node context menu
+    * Copy refence to node
+    * Delete
+    * Duplicate
 
 ## Built Using
 
 * [JointJS](http://jointjs.com/) - A flowchart/diagramming library.
 * [NodeJS](https://nodejs.org/en/) + [Electron](https://electronjs.org/) - For turning a JavaScript app into a Desktop app.
+* [node-vibrant](https://github.com/akfish/node-vibrant/) A tool for getting colour palettes from images.
 
-This project is based on a project called [talkit](https://github.com/rodobodolfo/Talkit) by [rodobodolfo](https://github.com/rodobodolfo).
+This project is loosely based on a project called [talkit](https://github.com/rodobodolfo/Talkit) by [rodobodolfo](https://github.com/rodobodolfo).
 
 ## License
 

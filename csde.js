@@ -799,7 +799,9 @@ var csde = (function csdeMaster(){
 
                 newElement = new joint.shapes.dialogue[itemKey]({position: pos});
                 _graph.addCell(newElement);
-                _globalLinkValue.target({id: newElement.id, port: newElement.getPorts().find(element => element.group === "input").id});
+
+
+                _globalLinkValue.link.target({id: newElement.id, port: newElement.getPorts().find(element => element.group === _globalLinkValue.type).id});
 
                 _globalLinkValue = null;
             }, items: {
@@ -865,9 +867,16 @@ var csde = (function csdeMaster(){
 
         _paper.on('link:pointerup', (cellView, evt, x, y) => {
             if(cellView.model.getTargetElement()) return; // If there is a target, we're not interested.
-            // Insert menu spanwning code here.
-            console.log(x, y);
-            _globalLinkValue = cellView.model;
+
+            let link = cellView.model;
+            let portId = link.source().port;
+            let origin = link.getSourceElement();
+            let originType = origin.getPort(portId).group;
+
+            _globalLinkValue = {
+                link: cellView.model,
+                type: (portType === "output" ? "input" : "output") // invert the type we should connect to.
+            };
             $('div#drop-menu').contextMenu({x: x, y: y});
         });
 

@@ -126,13 +126,13 @@ var csde = (function csdeMaster(){
                         width: _style.magnet.left.width,
                         height: this.model.get('size').height / 2
                     },
-                    use: {
+                    /*use: {
                         href: "./images/input-output-symbols.svg#input-left",
                         width: _style.icon.width,
                         height: _style.icon.height,
                         x: (_style.magnet.left.width - _style.icon.width) / 2,
                         y: ((this.model.get('size').height / 2) - _style.icon.height) / 2
-                    }
+                    }*/
                 }
             };
             this.model.output = {
@@ -145,13 +145,13 @@ var csde = (function csdeMaster(){
                         width: _style.magnet.left.width,
                         height: this.model.get('size').height / 2
                     },
-                    use: {
+                    /*use: {
                         href: "./images/input-output-symbols.svg#output-left",
                         width: _style.icon.width,
                         height: _style.icon.height,
                         x: (_style.magnet.left.width - _style.icon.width) / 2,
                         y: ((this.model.get('size').height / 2) - _style.icon.height) / 2
-                    }
+                    }*/
                 }
             };
             this.model.addPorts([this.model.input, this.model.output]);
@@ -283,13 +283,13 @@ var csde = (function csdeMaster(){
                         width: _style.magnet.right.width,
                         height: _style.node.multi.section
                     },
-                    use: {
+                    /*use: {
                         href: "./images/input-output-symbols.svg#output-right",
                         width: _style.icon.width,
                         height: _style.icon.height,
                         x: (_style.magnet.right.width - _style.icon.width) / 2,
                         y: (_style.node.multi.section - _style.icon.height) / 2
-                    }
+                    }*/
                 }
             });
 
@@ -350,16 +350,15 @@ var csde = (function csdeMaster(){
                         width: _style.magnet.left.width,
                         height: _style.magnet.left.height
                     },
-                    use: {
+                    /*use: {
                         href: "./images/input-output-symbols.svg#input-left",
                         width: _style.icon.width,
                         height: _style.icon.height,
                         x: (_style.magnet.left.width - _style.icon.width) / 2,
                         y: (_style.magnet.left.height - _style.icon.height) / 2
-                    }
+                    }*/
                 }
             };
-
             this.model.addPort(this.model.input);
         }
     });

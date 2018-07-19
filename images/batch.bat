@@ -1,1 +1,0 @@
-for /R characters %%I in (*.png) do ( cwebp.exe %%I -q 100 -o %%~fnI )

@@ -1,14 +1,19 @@
 /* jshint esversion: 6 */
+let _userAgent = navigator.userAgent.toLowerCase();
+let _isElectron = _userAgent.indexOf(' electron/') > -1;
+
+
+//let fs, os, path, mkdirp;
+if (_isElectron) {
+    console.log("Including requirements!");
+    var fs = require('fs');
+    var os = require('os');
+    var path = require('path');
+    var mkdirp = require('mkdirp');
+}
 
 var csde = (function csdeMaster(){
 
-    let userAgent = navigator.userAgent.toLowerCase();
-    let isElectron = userAgent.indexOf(' electron/') > -1;
-
-    let fs = null;
-    if (isElectron) {
-        const fs = require('fs');
-    }
 
     let _globalLinkValue = null;
 
@@ -848,6 +853,10 @@ var csde = (function csdeMaster(){
         });
     }
 
+    function _getFileLocation(fileName) {
+        return path.join(os.homedir(), ".csde", fileName);
+    }
+
     function initialize(baseElement, {width = 800, height = 600} = {}) {
         if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
         _$container = baseElement;
@@ -975,10 +984,38 @@ var csde = (function csdeMaster(){
         return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
     }
 
+    function save(fileName) {
+        let json = JSON.stringify(_graph.toJSON());
+        if (_isElectron) {
+            let location = _getFileLocation(fileName);
+
+            mkdirp(path.dirname(location), err =>{
+                if (err) throw err;
+            });
+            fs.writeFile(location, json, function(err) {
+                if (err) throw err;
+            });
+        } else {
+            localStorage.setItem(fileName, json);
+        }
+    }
+
+    function load(fileName) {
+        let json = "";
+        if (_isElectron) {
+            let location = _getFileLocation(fileName);
+        } else {
+            json = localStorage.getItem(fileName);
+        }
+        _graph.fromJSON(JSON.parse(json));
+    }
+
     return {
         addCharacter: character => _characters = addCharacter(character, _characters),
         addCharacters: characters => _characters = addCharacters(characters, _characters),
         clearCharacters: () => _characters = resetCharacters(),
+        save: filename => save(filename),
+        load: filename => load(filename),
         start: initialize
     };
 })();

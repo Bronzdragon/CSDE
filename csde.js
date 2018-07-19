@@ -463,9 +463,9 @@ var csde = (function csdeMaster(){
             let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
             if (!selectedChar) { selectedChar = _characters.find(element => element.name === 'unknown'); }
 
-            let imageURL = `images\\characters\\${selectedChar.url}`;
+            let imageURL = `.\\images\\characters\\${selectedChar.url}`;
             this._testImage(imageURL).catch(error => {
-                imageURL = "images\\characters\\unknown.png";
+                imageURL = ".\\images\\characters\\unknown.png";
             }).then(() => {
                 this.$box.$img.attr({
                     'src': imageURL,
@@ -477,7 +477,6 @@ var csde = (function csdeMaster(){
                     let dominantColour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
                     let hsl = null, hex = null;
                     if (!dominantColour) {
-                        // console.error("Cannot find colour. Using default");
                         hsl = {hue: 0, saturation: 100, lightness: 100};
                     } else {
                         hsl = {hue: dominantColour.getHsl()[0] * 360, saturation: dominantColour.getHsl()[1] * 100, lightness: dominantColour.getHsl()[2] * 100};

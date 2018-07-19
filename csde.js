@@ -875,7 +875,7 @@ var csde = (function csdeMaster(){
 
             _globalLinkValue = {
                 link: cellView.model,
-                type: (portType === "output" ? "input" : "output") // invert the type we should connect to.
+                type: (originType === "output" ? "input" : "output") // invert the type we should connect to.
             };
             $('div#drop-menu').contextMenu({x: x, y: y});
         });

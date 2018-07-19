@@ -2,6 +2,8 @@
 
 var csde = (function csdeMaster(){
 
+    let _globalLinkValue = null;
+
     let _$container = null;
     let _graph = null;
     let _characters = resetCharacters();
@@ -124,13 +126,13 @@ var csde = (function csdeMaster(){
                         width: _style.magnet.left.width,
                         height: this.model.get('size').height / 2
                     },
-                    use: {
+                    /*use: {
                         href: "./images/input-output-symbols.svg#input-left",
                         width: _style.icon.width,
                         height: _style.icon.height,
                         x: (_style.magnet.left.width - _style.icon.width) / 2,
                         y: ((this.model.get('size').height / 2) - _style.icon.height) / 2
-                    }
+                    }*/
                 }
             };
             this.model.output = {
@@ -143,13 +145,13 @@ var csde = (function csdeMaster(){
                         width: _style.magnet.left.width,
                         height: this.model.get('size').height / 2
                     },
-                    use: {
+                    /*use: {
                         href: "./images/input-output-symbols.svg#output-left",
                         width: _style.icon.width,
                         height: _style.icon.height,
                         x: (_style.magnet.left.width - _style.icon.width) / 2,
                         y: ((this.model.get('size').height / 2) - _style.icon.height) / 2
-                    }
+                    }*/
                 }
             };
             this.model.addPorts([this.model.input, this.model.output]);
@@ -281,13 +283,13 @@ var csde = (function csdeMaster(){
                         width: _style.magnet.right.width,
                         height: _style.node.multi.section
                     },
-                    use: {
+                    /*use: {
                         href: "./images/input-output-symbols.svg#output-right",
                         width: _style.icon.width,
                         height: _style.icon.height,
                         x: (_style.magnet.right.width - _style.icon.width) / 2,
                         y: (_style.node.multi.section - _style.icon.height) / 2
-                    }
+                    }*/
                 }
             });
 
@@ -348,16 +350,15 @@ var csde = (function csdeMaster(){
                         width: _style.magnet.left.width,
                         height: _style.magnet.left.height
                     },
-                    use: {
+                    /*use: {
                         href: "./images/input-output-symbols.svg#input-left",
                         width: _style.icon.width,
                         height: _style.icon.height,
                         x: (_style.magnet.left.width - _style.icon.width) / 2,
                         y: (_style.magnet.left.height - _style.icon.height) / 2
-                    }
+                    }*/
                 }
             };
-
             this.model.addPort(this.model.input);
         }
     });
@@ -450,34 +451,6 @@ var csde = (function csdeMaster(){
             });
 
             this.listenTo(this.model, 'focus', this.focus);
-
-            console.log("Creating ports.");
-
-            // this.model.input = {
-            //     group: "input",
-            //     markup: "<rect />",
-            //     attrs: {
-            //         rect: {
-            //             class: "magnet input left",
-            //             magnet: true,
-            //             width: _style.magnet.right.width,
-            //             height: _style.node.text.height/2
-            //         }
-            //     }
-            // };
-            // this.model.output = {
-            //     group: "output",
-            //     markup: "<rect />",
-            //     attrs: {
-            //         rect: {
-            //             class: "magnet output left",
-            //             magnet: true,
-            //             width: _style.magnet.right.width,
-            //             height: _style.node.text.height/2
-            //         }
-            //     }
-            // };
-            // this.model.addPorts([this.model.input, this.model.output]);
         },
 
         focus: function() {
@@ -490,14 +463,69 @@ var csde = (function csdeMaster(){
             let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
             if (!selectedChar) { selectedChar = _characters.find(element => element.name === 'unknown'); }
 
-            this.$box.$img.attr({
-                'src': `images\\characters\\${selectedChar.url}`,
-                'title': selectedChar.name,
-                'alt': selectedChar.name
+            let imageURL = `images\\characters\\${selectedChar.url}`;
+            this._testImage(imageURL).catch(error => {
+                imageURL = "images\\characters\\unknown.png";
+            }).then(() => {
+                this.$box.$img.attr({
+                    'src': imageURL,
+                    'title': selectedChar.name,
+                    'alt': selectedChar.name
+                });
+
+                Vibrant.from(imageURL).getPalette().then(palette => {
+                    let dominantColour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
+                    let hsl = null, hex = null;
+                    if (!dominantColour) {
+                        // console.error("Cannot find colour. Using default");
+                        hsl = {hue: 0, saturation: 100, lightness: 100};
+                    } else {
+                        hsl = {hue: dominantColour.getHsl()[0] * 360, saturation: dominantColour.getHsl()[1] * 100, lightness: dominantColour.getHsl()[2] * 100};
+                        hsl.saturation = (100 - hsl.saturation) / 2 + hsl.saturation;
+                        hsl.lightness = hsl.lightness / 1.2;
+                    }
+
+                    this.model.attr({
+                        rect: {
+                            fill: {
+                                type: 'linearGradient',
+                                stops: [
+                                    { offset: '0%', color: '#abbaab' },
+                                    { offset: '24%', color: '#ffffff' },
+                                    { offset: '24.01%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${hsl.lightness}%)` },
+                                    { offset: '95%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${(100 - hsl.lightness) / 2 + hsl.lightness}%)` },
+                                    { offset: '100%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${(100 - hsl.lightness) / 1.8 + hsl.lightness}%)` }
+                                ]
+                            }
+                        }
+                    });
+                });
             });
 
             this.$box.$character_select.val(selectedChar.name);
             this.$box.$speech.val(this.model.get('speech'));
+        },
+
+        _testImage: function(url, timeoutT) {
+            return new Promise(function (resolve, reject) {
+                var timeout = timeoutT || 5000;
+                var timer, img = new Image();
+                img.onerror = img.onabort = function () {
+                    clearTimeout(timer);
+                    reject("Not a valid image");
+                };
+                img.onload = function () {
+                    clearTimeout(timer);
+                    resolve("Success");
+                };
+                timer = setTimeout(function () {
+                    // reset .src to invalid URL so it stops previous
+                    // loading, but doesn't trigger new load
+                    img.src = "//!!!!/test.jpg";
+                    reject("Timeout occured");
+                }, timeout);
+                img.src = url;
+            });
         }
     });
 
@@ -670,34 +698,41 @@ var csde = (function csdeMaster(){
     	if (magnetSource == magnetTarget || cellViewSource == cellViewTarget)
     		return false;
 
+
         // Prevent inputs/outputs from linking to themselves
-        let sourceType = magnetSource.getAttribute('port-group');
-        if ($(magnetTarget).hasClass(sourceType))
+        let targetType = magnetTarget.getAttribute("class").includes("output") ? "output" : "input";
+        if (magnetSource.getAttribute('port-group') === targetType)
             return false;
 
-        // If we're connecting to an Output node, allow only one connection.
-        let isOutput = magnetTarget.getAttribute("class").includes("output");
-        if (isOutput) {
-            let portId = magnetTarget.getAttribute('port');
-            let targetLinks = _graph.getConnectedLinks(cellViewTarget.model);
-            let portHasConnections = targetLinks.some(link => {
-                if (linkView.model == link) return false; // Discount the current connection.
-                return (link.get('source').port === portId ||
-                        link.get('target').port === portId);
-            });
-            if (portHasConnections) return false;
-        }
+        // Allow many inputs, but only one output
+        if (targetType == "input")
+            return true;
 
-        return true;
+        // Check for link count. Only allow a connection if there's only one.
+        let portId = magnetTarget.parentElement.getAttribute('port');
+        let targetLinks = _graph.getConnectedLinks(cellViewTarget.model);
+        let portHasConnections = targetLinks.some(link => {
+            if (linkView.model == link) return false; // Discount the current connection.
+            return (link.get('source').port === portId ||
+                    link.get('target').port === portId);
+        });
+
+        return !portHasConnections;
     }
 
     function _validateMagnet(cellView, magnet) {
+        let isOutput = magnet.getAttribute("class").includes("output");
+        if (!isOutput) {
+            return true;
+        }
+
         let links = _graph.getConnectedLinks(cellView.model);
-        let portId = magnet.getAttribute('port');
+        let portId = magnet.parentElement.getAttribute('port');
 
         let hasConnection = links.some(
             link => link.get('source').port === portId || link.get('target').port === portId
         );
+
         return !hasConnection;
     }
 
@@ -709,7 +744,7 @@ var csde = (function csdeMaster(){
         _graph.addCell(new nodeType ({ position: location }));
     }
 
-    function _addContextMenu(element) {
+    function _addContextMenus(element) {
         $.contextMenu({
             selector: 'div#paper',
             callback: function (itemKey, opt, rootMenu, originalEvent) {
@@ -720,39 +755,26 @@ var csde = (function csdeMaster(){
                     y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
                 };
 
-                switch (itemKey) {
-                    case 'text':
-                        type = joint.shapes.dialogue.Text;
-                        break;
-                    case 'choice':
-                        type = joint.shapes.dialogue.Choice;
-                        break;
-                    case 'set':
-                        type = joint.shapes.dialogue.Set;
-                        break;
-                    case 'branch':
-                        type = joint.shapes.dialogue.Branch;
-                        break;
-                    case 'base':
-                        type = joint.shapes.dialogue.Base;
-                        break;
-                    case 'multi':
-                        type = joint.shapes.dialogue.Multi;
+                switch (itemKey) { // If we've selected any of the node types, add that node type to the graph.
+                    case 'Text':
+                    case 'Choice':
+                    case 'Set':
+                    case 'Branch':
+                    case 'Base':
+                    case 'Multi':
+                        _addNodeToGraph(joint.shapes.dialogue[itemKey], pos);
                         break;
                     default:
-                        console.log(TODO);
+                        console.log("File management is not yet implemented.");
                         return;
                 }
-                _addNodeToGraph(type, pos);
-
             }, items: {
-                //separator: { "type": "cm_separator" },
-                'text': {name: 'Speech'},
-                'choice': {name: 'Choice'},
-                'set': {name: 'Set flag'},
-                'branch': {name: 'Conditional branch'},
-                'base': {name: 'DEBUG - base'},
-                'multi': {name: 'DEBUG - multi'},
+                'Text': {name: 'Speech'},
+                'Choice': {name: 'Choice'},
+                'Set': {name: 'Set flag'},
+                'Branch': {name: 'Conditional branch'},
+                'Base': {name: 'DEBUG - base'},
+                'Multi': {name: 'DEBUG - multi'},
                 'data': {
                     name: 'Data management',
                     items: {
@@ -763,8 +785,30 @@ var csde = (function csdeMaster(){
                         'load': {name: "Manual Load"},
                         'new': {name: 'Open blank file'}
                     }
-                },
-                //separator2: { "type": "cm_separator" }
+                }
+            }
+        });
+
+        $.contextMenu({
+            selector: 'div#drop-menu',
+            callback: function (itemKey, opt, rootMenu, originalEvent) {
+                let pos = {
+                    x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
+                    y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
+                };
+
+                newElement = new joint.shapes.dialogue[itemKey]({position: pos});
+                _graph.addCell(newElement);
+
+
+                _globalLinkValue.link.target({id: newElement.id, port: newElement.getPorts().find(element => element.group === _globalLinkValue.type).id});
+
+                _globalLinkValue = null;
+            }, items: {
+                'Text': {name: 'Speech'},
+                'Choice': {name: 'Choice'},
+                'Set': {name: 'Set flag'},
+                'Branch': {name: 'Conditional branch'}
             }
         });
     }
@@ -794,8 +838,7 @@ var csde = (function csdeMaster(){
         });
     }
 
-    function initialize({element:baseElement , width = 800, height = 600}) {
-
+    function initialize(baseElement, {width = 800, height = 600} = {}) {
         if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
         _$container = baseElement;
         _$container.$paper = baseElement.find('div#paper');
@@ -822,6 +865,21 @@ var csde = (function csdeMaster(){
             snapLinks: { radius: 75 },
         });
 
+        _paper.on('link:pointerup', (cellView, evt, x, y) => {
+            if(cellView.model.getTargetElement()) return; // If there is a target, we're not interested.
+
+            let link = cellView.model;
+            let portId = link.source().port;
+            let origin = link.getSourceElement();
+            let originType = origin.getPort(portId).group;
+
+            _globalLinkValue = {
+                link: cellView.model,
+                type: (originType === "output" ? "input" : "output") // invert the type we should connect to.
+            };
+            $('div#drop-menu').contextMenu({x: x, y: y});
+        });
+
         /* Might cause performance issues on large graphs. Will have to investigate */
         _graph.on('change:position add', function(cell) {
             for (let link of _graph.getLinks()) {
@@ -830,7 +888,8 @@ var csde = (function csdeMaster(){
         });
 
         joint.shapes.basic.Generic.define('svg.Gradient', {
-            markup: `<defs>
+            markup:
+`<defs>
     <linearGradient id="CharacterColour">
       <stop offset="0%" stop-color=" #abbaab" />
       <stop offset="24%" stop-color="#ffffff" />
@@ -843,40 +902,47 @@ var csde = (function csdeMaster(){
     <linearGradient id="ChoiceColour">
         <stop offset="0%" stop-color="#F82" />
         <stop offset="100%" stop-color="#FF8" />
-
     </linearGradient>
 
     <linearGradient id="InputPort">
-            <stop offset="0%" stop-color="#DD3333"></stop>
-            <stop offset="85%" stop-color="#331111"></stop>
-            <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
-        </linearGradient>
+        <stop offset="0%" stop-color="#D33" />
+        <stop offset="85%" stop-color="#311" />
+        <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
+    </linearGradient>
+
+    <linearGradient id="InputPort">
+        <stop offset="0%" stop-color="#DD3333"></stop>
+        <stop offset="85%" stop-color="#331111"></stop>
+        <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
+    </linearGradient>
+
     <linearGradient id="OutPort">
         <stop offset="0%" stop-color="#DDD" />
         <stop offset="85%" stop-color="#333" />
         <stop offset="100%" stop-color="rgba(17,17,17,0.0)" />
     </linearGradient>
+
     <linearGradient id="OutPortRight">
         <stop offset="0%" stop-color="rgba(17,17,17,0.0)" />
         <stop offset="15%" stop-color="#333" />
         <stop offset="100%" stop-color="#DDD" />
     </linearGradient>
+
     <linearGradient id="OutPortRightFull">
         <stop offset="0%" stop-color="#abbaab" />
         <stop offset="15%" stop-color="#333" />
         <stop offset="100%" stop-color="#DDD" />
     </linearGradient>
+
     <radialGradient id="OutPortRad"  cx="1.25" cy="1.25" r="1.25">
         <stop offset="0%" stop-color="#DDD"/>
         <stop offset="100%" stop-color="#333"/>
       </radialGradient>
-
-
 </defs>`});
 
         _graph.addCell(new joint.shapes.svg.Gradient());
 
-        _addContextMenu(_$container);
+        _addContextMenus(_$container);
 
         _registerPanning(_paper, _$container);
     }

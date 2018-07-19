@@ -478,11 +478,13 @@ var csde = (function csdeMaster(){
                     let hsl = null, hex = null;
                     if (!dominantColour) {
                         // console.error("Cannot find colour. Using default");
-                        hsl = {hue: 0, saturation: 100, lightness: 100};
+                        hsl = {hue: 0, saturation: 0, lightness: 70};
                     } else {
                         hsl = {hue: dominantColour.getHsl()[0] * 360, saturation: dominantColour.getHsl()[1] * 100, lightness: dominantColour.getHsl()[2] * 100};
-                        hsl.saturation = (100 - hsl.saturation) / 2 + hsl.saturation;
-                        hsl.lightness = hsl.lightness / 1.2;
+                        // hsl.saturation = (100 - hsl.saturation) / 2 + hsl.saturation;
+                        hsl.saturation = hsl.saturation * 0.80;
+                        hsl.lightness = hsl.lightness * 0.60 + 30;
+                        // hsl.lightness = Math.min(hsl.lightness / 1.2, 80);
                     }
 
                     this.model.attr({
@@ -493,8 +495,8 @@ var csde = (function csdeMaster(){
                                     { offset: '0%', color: '#abbaab' },
                                     { offset: '24%', color: '#ffffff' },
                                     { offset: '24.01%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${hsl.lightness}%)` },
-                                    { offset: '95%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${(100 - hsl.lightness) / 2 + hsl.lightness}%)` },
-                                    { offset: '100%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${(100 - hsl.lightness) / 1.8 + hsl.lightness}%)` }
+                                    { offset: '95%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, 75%)` },
+                                    { offset: '100%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, 80%)` }
                                 ]
                             }
                         }

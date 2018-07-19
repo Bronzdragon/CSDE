@@ -2,6 +2,14 @@
 
 var csde = (function csdeMaster(){
 
+    let userAgent = navigator.userAgent.toLowerCase();
+    let isElectron = userAgent.indexOf(' electron/') > -1;
+
+    let fs = null;
+    if (isElectron) {
+        const fs = require('fs');
+    }
+
     let _globalLinkValue = null;
 
     let _$container = null;

@@ -20,7 +20,14 @@ var csde = (function csdeMaster(){
     let _$container = null;
     let _graph = null;
     let _characters = resetCharacters();
-    let _mouseObj = {};
+    let _mouseObj = {
+        panning: false,
+        position: { x: 0, y: 0 }
+    };
+    let _saveObject = {
+        currentFile: '',
+        autosave: false
+    };
 
     const _defaultLink = new joint.dia.Link({
         router: { name: 'metro' },
@@ -390,7 +397,7 @@ var csde = (function csdeMaster(){
                 '<textarea class="speech" rows="4" cols="27" placeholder="¶"></textarea>' +
                 '<div class="left">' +
                     '<button class="delete">x</button>' +
-                    '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
+                    '<img class="portrait" alt="Character portrait" src="" />' +
                     '<select class="actor" />' +
                 '</div>' +
             '</div>',
@@ -473,12 +480,13 @@ var csde = (function csdeMaster(){
         updateBox: function() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
-            let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
-            if (!selectedChar) { selectedChar = _characters.find(element => element.name === 'unknown'); }
+            let selectedChar = _characters.find(element => element.name === this.model.get("actor"));
+            if (!selectedChar) { selectedChar = _characters.find(element => element.name === "unknown"); }
 
             let imageURL = `images\\characters\\${selectedChar.url}`;
             this._testImage(imageURL).catch(error => {
-                imageURL = "images\\characters\\unknown.png";
+                console.error('This character does not have a valid image.\nCharacter name: "' + selectedChar.name + '", Location: "' + imageURL + '"');
+                imageURL = "images\\characters\\" + _characters.find(element => element.name === "unknown").url;
             }).then(() => {
                 this.$box.$img.attr({
                     'src': imageURL,
@@ -713,7 +721,6 @@ var csde = (function csdeMaster(){
     	if (magnetSource == magnetTarget || cellViewSource == cellViewTarget)
     		return false;
 
-
         // Prevent inputs/outputs from linking to themselves
         let targetType = magnetTarget.getAttribute("class").includes("output") ? "output" : "input";
         if (magnetSource.getAttribute('port-group') === targetType)
@@ -829,9 +836,6 @@ var csde = (function csdeMaster(){
     }
 
     function _registerPanning(paper, element) {
-        _mouseObj.panning = false;
-        _mouseObj.position = { x: 0, y: 0 };
-
         paper.on('blank:pointerdown', (event, x, y) =>{
             _mouseObj.panning = true;
             _mouseObj.position = {x: event.pageX, y: event.pageY};
@@ -850,6 +854,25 @@ var csde = (function csdeMaster(){
         element.mouseup(event => {
             _mouseObj.panning = false;
             $('body').css('cursor', 'default');
+        });
+    }
+
+    function _registerHotkeys(element) {
+        $(window).keypress(event => {
+            if(event.ctrlKey && event.key === 'o'){
+                console.log("Open pressed.");
+                load(prompt("Which file should we load?", "default.json"));
+                event.preventDefault();
+            }
+            if(event.ctrlKey && event.key === 's'){
+                console.log("Gotta save!");
+                if (!_saveObject.fileName) {
+                    _saveObject.fileName = prompt("What would you like your file to be called?", "default.json");
+                    save(_saveObject.fileName);
+                }
+
+                event.preventDefault();
+            }
         });
     }
 
@@ -897,6 +920,11 @@ var csde = (function csdeMaster(){
                 type: (originType === "output" ? "input" : "output") // invert the type we should connect to.
             };
             $('div#drop-menu').contextMenu({x: x, y: y});
+        });
+
+        _paper.on("blank:pointerdblclick", () =>{
+            //joint.util.toggleFullScreen(_paper.el);
+
         });
 
         /* Might cause performance issues on large graphs. Will have to investigate */
@@ -964,6 +992,10 @@ var csde = (function csdeMaster(){
         _addContextMenus(_$container);
 
         _registerPanning(_paper, _$container);
+
+        _registerHotkeys(_$container);
+
+
     }
 
     function addCharacters(newCharacters, list = resetCharacters()) {
@@ -984,7 +1016,27 @@ var csde = (function csdeMaster(){
         return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
     }
 
-    function save(fileName) {
+    function exportJSON(fileLocation) {
+        if (!fileLocation) {
+            // TODO: Prompt for file location
+        }
+        // TODO: Offer a file of some kind
+        _saveObject.currentFile = null;
+    }
+    function importJSON(fileLocation) {
+        if (!fileLocation) {
+            // TODO: Prompt for file location
+        }
+        // TODO: Load from an external file
+    }
+
+    function save(fileName = '', interactive = true) {
+        if (!fileName) {
+            if (!interactive) return;
+            // Promt for a filename here.
+            fileName = prompt("Filename plz");
+        }
+
         let json = JSON.stringify(_graph.toJSON());
         if (_isElectron) {
             let location = _getFileLocation(fileName);
@@ -998,16 +1050,23 @@ var csde = (function csdeMaster(){
         } else {
             localStorage.setItem(fileName, json);
         }
+
+        _saveObject.currentFile = fileName;
     }
 
     function load(fileName) {
-        let json = "";
+        if (!fileName) {
+            // TODO: Prompt for a filename here.
+        }
+
+        let json = '';
         if (_isElectron) {
             let location = _getFileLocation(fileName);
         } else {
             json = localStorage.getItem(fileName);
         }
         _graph.fromJSON(JSON.parse(json));
+        _saveObject.currentFile = fileName;
     }
 
     return {

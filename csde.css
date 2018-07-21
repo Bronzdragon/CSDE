@@ -53,6 +53,8 @@ html, body {
 	position: fixed;
 	padding: 5px;
 	z-index: 3;
+	right: 20px;
+	bottom: 20px;
 }
 
 /* Node styles */

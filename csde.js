@@ -795,12 +795,17 @@ var csde = (function csdeMaster(){
                 'data': {
                     name: 'Data management',
                     items: {
-                        'import': {name: "Import from file"},
-                        'export-csde': {name: "Export (CSDE format)"},
-                        'export-uvnp': {name: "Export (UVNP format)"},
-                        'save': {name: "Manual Save"},
-                        'load': {name: "Manual Load"},
-                        'new': {name: 'Open blank file'}
+                        'import': {
+                            name: "Import from file"
+                        }, 'export-csde': {
+                            name: "Export (CSDE format)",
+                            callback: exportJSON
+                        }, 'export-uvnp': {
+                            name: "Export (UVNP format)"
+                        },'new': {
+                            name: 'Open blank file',
+                            callback: () => _graph.clear()
+                        }
                     }
                 }
             }
@@ -992,14 +997,22 @@ var csde = (function csdeMaster(){
 
         _registerHotkeys(_$container);
 
+        /* Load if there is a state */
         load();
 
+        /* Enable autosave */
         function autosave() {
             notify("Autosaving...", 'low');
             save();
             setTimeout(autosave, _autosaveInterval);
         }
         setTimeout(autosave, _autosaveInterval);
+
+        /* Set up drag importing */
+        _$container.on('drop', event => {
+            let files = evt.dataTransfer.files;
+        });
+
     }
 
     function notify(message, priority = "low") {
@@ -1047,12 +1060,21 @@ var csde = (function csdeMaster(){
         return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
     }
 
-    function exportJSON(fileLocation) {
-        if (!fileLocation) {
-            // TODO: Prompt for file location
-        }
+    function exportJSON() {
+        console.log("Exporting JSON");
+        let $link = $("<a>").
+        attr({
+            "download": "export.json",
+            "href": `data:application/json,${encodeURIComponent(JSON.stringify(_graph.toJSON()))}`,
+            "target": "_blank"
+        })
+        .hide();
+
+        $('body').append($link);
+        $link[0].click();
+        $link.remove();
+
         // TODO: Offer a file of some kind
-        _saveObject.currentFile = null;
     }
 
     function importJSON(fileLocation) {
@@ -1063,12 +1085,8 @@ var csde = (function csdeMaster(){
     }
 
     function save() {
-        // notify("Saving...", "low");
-
         let json = JSON.stringify(_graph.toJSON());
         if (_isElectron) {
-            //;
-
             mkdirp(_getSafefileLocation(), err => {
                 if (err) throw err;
             });
@@ -1079,7 +1097,6 @@ var csde = (function csdeMaster(){
             localStorage.setItem(_getSafefileName(), json);
         }
 
-        // _saveObject.currentFile = fileName;
         notify("Saved.", "med");
     }
 

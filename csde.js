@@ -886,6 +886,7 @@ var csde = (function csdeMaster(){
         _graph.on('change:position add', function(cell) {
             for (let link of _graph.getLinks()) {
                 _paper.findViewByModel(link).update();
+                _paper.fitToContent({padding: 4000})
             }
         });
 

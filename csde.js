@@ -13,7 +13,7 @@ if (_isElectron) {
 }
 
 var csde = (function csdeMaster(){
-
+    const _autosaveInterval = 10000;
 
     let _globalLinkValue = null;
 
@@ -24,7 +24,6 @@ var csde = (function csdeMaster(){
         panning: false,
         position: { x: 0, y: 0 }
     };
-    let _defaultFileName = 'csde';
 
     const _defaultLink = new joint.dia.Link({
         router: { name: 'metro' },
@@ -703,7 +702,6 @@ var csde = (function csdeMaster(){
         },
     });
 
-
     function _generateId(length = 16, prefix = "id_"){
         if (!(Number.isInteger(length = Number(length)) || length < 1)){ return null; }
         let seed = "";
@@ -860,19 +858,23 @@ var csde = (function csdeMaster(){
                 // TODO: Tie this to import.
             }
             if(event.ctrlKey && event.key === 's'){
-                console.log("Gotta save!");
-                if (!_saveObject.fileName) {
-                    _saveObject.fileName = prompt("What would you like your file to be called?", "default.json");
-                    save(_saveObject.fileName);
-                }
+                //console.log("Gotta save!");
+                save();
+                /*if (!_saveObject.fileName) {
+                    //_saveObject.fileName = prompt("What would you like your file to be called?", "default.json");
+                }*/
 
                 event.preventDefault();
             }
         });
     }
 
-    function _getFileLocation(fileName) {
-        return path.join(os.homedir(), ".csde", fileName);
+    function _getSafefileName() {
+        return "csde.json";
+    }
+
+    function _getSafefileLocation(filename = '') {
+        return path.join(os.homedir(), ".csde", filename);
     }
 
     function initialize(baseElement, {width = 800, height = 600} = {}) {
@@ -989,11 +991,23 @@ var csde = (function csdeMaster(){
         _registerPanning(_paper, _$container);
 
         _registerHotkeys(_$container);
+
+        load();
+
+        function autosave() {
+            notify("Autosaving...", 'low');
+            save();
+            setTimeout(autosave, _autosaveInterval);
+        }
+        setTimeout(autosave, _autosaveInterval);
     }
 
     function notify(message, priority = "low") {
         if (!message) return;
-        if (priority !== "low" || priority !== "med" || priority !== "high") return;
+        if (!(priority === "low" || priority === "med" || priority === "high")) return;
+
+        console.log("Notification: " + message);
+
         let timeoutDuration = 0;
 
         let $element = $('<div>', {
@@ -1049,44 +1063,50 @@ var csde = (function csdeMaster(){
     }
 
     function save() {
-        notify("Saving...", "low");
-        if (!fileName) {
-            if (!interactive) return;
-            // Promt for a filename here.
-            fileName = prompt("Filename plz");
-        }
+        // notify("Saving...", "low");
 
         let json = JSON.stringify(_graph.toJSON());
         if (_isElectron) {
-            let location = _getFileLocation(fileName);
+            //;
 
-            mkdirp(path.dirname(location), err =>{
+            mkdirp(_getSafefileLocation(), err => {
                 if (err) throw err;
             });
-            fs.writeFile(location, json, function(err) {
+            fs.writeFile(_getSafefileLocation(_getSafefileName()), json, 'utf8', err => {
                 if (err) throw err;
             });
         } else {
-            localStorage.setItem(fileName, json);
+            localStorage.setItem(_getSafefileName(), json);
         }
 
-        _saveObject.currentFile = fileName;
-        notify(`Saved, as "${fileName}"`, "med");
+        // _saveObject.currentFile = fileName;
+        notify("Saved.", "med");
     }
 
     function load() {
-        if (!fileName) {
-            // TODO: Prompt for a filename here.
-        }
-
-        let json = '';
+        let handleData = function (jsonText) {
+            let json = JSON.parse(jsonText);
+            if (json) {
+                notify("Data found, loading...", 'low');
+                _graph.clear();
+                _graph.fromJSON(json);
+            }
+        };
         if (_isElectron) {
-            let location = _getFileLocation(fileName);
+            mkdirp(_getSafefileLocation(), err => {
+                if (err) throw err;
+            });
+
+            fs.readFile(_getSafefileLocation(_getSafefileName()), 'utf8', (err,data) => {
+                if (err) {
+                    if (err.code === "ENOENT") return;
+                        else throw err;
+                }
+                handleData(data);
+            });
         } else {
-            json = localStorage.getItem(fileName);
+            handleData(localStorage.getItem(_getSafefileName()));
         }
-        _graph.fromJSON(JSON.parse(json));
-        _saveObject.currentFile = fileName;
     }
 
     return {
@@ -1094,6 +1114,7 @@ var csde = (function csdeMaster(){
         addCharacters: characters => _characters = addCharacters(characters, _characters),
         clearCharacters: () => _characters = resetCharacters(),
         save: save,
+        load: load,
         import: importJSON,
         export: importJSON,
         notify: notify,

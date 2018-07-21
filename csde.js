@@ -24,10 +24,7 @@ var csde = (function csdeMaster(){
         panning: false,
         position: { x: 0, y: 0 }
     };
-    let _saveObject = {
-        currentFile: '',
-        autosave: false
-    };
+    let _defaultFileName = 'csde';
 
     const _defaultLink = new joint.dia.Link({
         router: { name: 'metro' },
@@ -860,9 +857,7 @@ var csde = (function csdeMaster(){
     function _registerHotkeys(element) {
         $(window).keypress(event => {
             if(event.ctrlKey && event.key === 'o'){
-                console.log("Open pressed.");
-                load(prompt("Which file should we load?", "default.json"));
-                event.preventDefault();
+                // TODO: Tie this to import.
             }
             if(event.ctrlKey && event.key === 's'){
                 console.log("Gotta save!");
@@ -994,8 +989,30 @@ var csde = (function csdeMaster(){
         _registerPanning(_paper, _$container);
 
         _registerHotkeys(_$container);
+    }
 
+    function notify(message, priority = "low") {
+        if (!message) return;
+        if (priority !== "low" || priority !== "med" || priority !== "high") return;
+        let timeoutDuration = 0;
 
+        let $element = $('<div>', {
+            "class": `notification prio-${priority}`
+        })
+        .appendTo("div#notifications")
+        .text(message);
+
+        if (priority === "high") {
+            timeoutDuration = 10000;
+        } else if (priority === "med") {
+            timeoutDuration = 4000;
+        } else {
+            timeoutDuration = 2000;
+        }
+
+        setTimeout(event => {
+            $element.remove();
+        }, timeoutDuration);
     }
 
     function addCharacters(newCharacters, list = resetCharacters()) {
@@ -1023,6 +1040,7 @@ var csde = (function csdeMaster(){
         // TODO: Offer a file of some kind
         _saveObject.currentFile = null;
     }
+
     function importJSON(fileLocation) {
         if (!fileLocation) {
             // TODO: Prompt for file location
@@ -1030,7 +1048,8 @@ var csde = (function csdeMaster(){
         // TODO: Load from an external file
     }
 
-    function save(fileName = '', interactive = true) {
+    function save() {
+        notify("Saving...", "low");
         if (!fileName) {
             if (!interactive) return;
             // Promt for a filename here.
@@ -1052,9 +1071,10 @@ var csde = (function csdeMaster(){
         }
 
         _saveObject.currentFile = fileName;
+        notify(`Saved, as "${fileName}"`, "med");
     }
 
-    function load(fileName) {
+    function load() {
         if (!fileName) {
             // TODO: Prompt for a filename here.
         }
@@ -1073,8 +1093,10 @@ var csde = (function csdeMaster(){
         addCharacter: character => _characters = addCharacter(character, _characters),
         addCharacters: characters => _characters = addCharacters(characters, _characters),
         clearCharacters: () => _characters = resetCharacters(),
-        save: filename => save(filename),
-        load: filename => load(filename),
+        save: save,
+        import: importJSON,
+        export: importJSON,
+        notify: notify,
         start: initialize
     };
 })();

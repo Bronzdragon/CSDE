@@ -463,9 +463,9 @@ var csde = (function csdeMaster(){
             let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
             if (!selectedChar) { selectedChar = _characters.find(element => element.name === 'unknown'); }
 
-            let imageURL = `images\\characters\\${selectedChar.url}`;
+            let imageURL = `.\\images\\characters\\${selectedChar.url}`;
             this._testImage(imageURL).catch(error => {
-                imageURL = "images\\characters\\unknown.png";
+                imageURL = ".\\images\\characters\\unknown.png";
             }).then(() => {
                 this.$box.$img.attr({
                     'src': imageURL,
@@ -886,6 +886,7 @@ var csde = (function csdeMaster(){
         _graph.on('change:position add', function(cell) {
             for (let link of _graph.getLinks()) {
                 _paper.findViewByModel(link).update();
+                _paper.fitToContent({padding: 4000})
             }
         });
 

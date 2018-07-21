@@ -33,7 +33,7 @@ Currently, no tests are set up. Sorry.
 
 ## Roadmap
 
-Planned features still in the development pipeline:
+### Planned features still in the development pipeline:
 1. Pick a license.
 2. When automatically creating a text node, try to set the actor to the previous conversation participant (if there is one).
 3. When magnet is connected, give feedback that it is (for example, it changes colour).
@@ -53,6 +53,9 @@ Planned features still in the development pipeline:
     * Copy refence to node
     * Delete
     * Duplicate
+### Features not likely to be implemented soon:
+* Fullscreen mode.
+
 
 ## Built Using
 

@@ -1,13 +1,29 @@
 /* jshint esversion: 6 */
+let _userAgent = navigator.userAgent.toLowerCase();
+let _isElectron = _userAgent.indexOf(' electron/') > -1;
+
+
+//let fs, os, path, mkdirp;
+if (_isElectron) {
+    console.log("Including requirements!");
+    var fs = require('fs');
+    var os = require('os');
+    var path = require('path');
+    var mkdirp = require('mkdirp');
+}
 
 var csde = (function csdeMaster(){
+    const _autosaveInterval = 10000;
 
     let _globalLinkValue = null;
 
     let _$container = null;
     let _graph = null;
     let _characters = resetCharacters();
-    let _mouseObj = {};
+    let _mouseObj = {
+        panning: false,
+        position: { x: 0, y: 0 }
+    };
 
     const _defaultLink = new joint.dia.Link({
         router: { name: 'metro' },
@@ -377,7 +393,7 @@ var csde = (function csdeMaster(){
                 '<textarea class="speech" rows="4" cols="27" placeholder="¶"></textarea>' +
                 '<div class="left">' +
                     '<button class="delete">x</button>' +
-                    '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
+                    '<img class="portrait" alt="Character portrait" src="" />' +
                     '<select class="actor" />' +
                 '</div>' +
             '</div>',
@@ -460,12 +476,13 @@ var csde = (function csdeMaster(){
         updateBox: function() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
-            let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
-            if (!selectedChar) { selectedChar = _characters.find(element => element.name === 'unknown'); }
+            let selectedChar = _characters.find(element => element.name === this.model.get("actor"));
+            if (!selectedChar) { selectedChar = _characters.find(element => element.name === "unknown"); }
 
             let imageURL = `.\\images\\characters\\${selectedChar.url}`;
             this._testImage(imageURL).catch(error => {
-                imageURL = ".\\images\\characters\\unknown.png";
+                console.error('This character does not have a valid image.\nCharacter name: "' + selectedChar.name + '", Location: "' + imageURL + '"');
+                imageURL = ".\\images\\characters\\" + _characters.find(element => element.name === "unknown").url;
             }).then(() => {
                 this.$box.$img.attr({
                     'src': imageURL,
@@ -685,7 +702,6 @@ var csde = (function csdeMaster(){
         },
     });
 
-
     function _generateId(length = 16, prefix = "id_"){
         if (!(Number.isInteger(length = Number(length)) || length < 1)){ return null; }
         let seed = "";
@@ -699,7 +715,6 @@ var csde = (function csdeMaster(){
     	// Prevent linking to itself.
     	if (magnetSource == magnetTarget || cellViewSource == cellViewTarget)
     		return false;
-
 
         // Prevent inputs/outputs from linking to themselves
         let targetType = magnetTarget.getAttribute("class").includes("output") ? "output" : "input";
@@ -816,9 +831,6 @@ var csde = (function csdeMaster(){
     }
 
     function _registerPanning(paper, element) {
-        _mouseObj.panning = false;
-        _mouseObj.position = { x: 0, y: 0 };
-
         paper.on('blank:pointerdown', (event, x, y) =>{
             _mouseObj.panning = true;
             _mouseObj.position = {x: event.pageX, y: event.pageY};
@@ -838,6 +850,31 @@ var csde = (function csdeMaster(){
             _mouseObj.panning = false;
             $('body').css('cursor', 'default');
         });
+    }
+
+    function _registerHotkeys(element) {
+        $(window).keypress(event => {
+            if(event.ctrlKey && event.key === 'o'){
+                // TODO: Tie this to import.
+            }
+            if(event.ctrlKey && event.key === 's'){
+                //console.log("Gotta save!");
+                save();
+                /*if (!_saveObject.fileName) {
+                    //_saveObject.fileName = prompt("What would you like your file to be called?", "default.json");
+                }*/
+
+                event.preventDefault();
+            }
+        });
+    }
+
+    function _getSafefileName() {
+        return "csde.json";
+    }
+
+    function _getSafefileLocation(filename = '') {
+        return path.join(os.homedir(), ".csde", filename);
     }
 
     function initialize(baseElement, {width = 800, height = 600} = {}) {
@@ -882,11 +919,16 @@ var csde = (function csdeMaster(){
             $('div#drop-menu').contextMenu({x: x, y: y});
         });
 
+        _paper.on("blank:pointerdblclick", () =>{
+            //joint.util.toggleFullScreen(_paper.el);
+
+        });
+
         /* Might cause performance issues on large graphs. Will have to investigate */
         _graph.on('change:position add', function(cell) {
             for (let link of _graph.getLinks()) {
                 _paper.findViewByModel(link).update();
-                _paper.fitToContent({padding: 4000})
+                _paper.fitToContent({padding: 4000});
             }
         });
 
@@ -948,6 +990,44 @@ var csde = (function csdeMaster(){
         _addContextMenus(_$container);
 
         _registerPanning(_paper, _$container);
+
+        _registerHotkeys(_$container);
+
+        load();
+
+        function autosave() {
+            notify("Autosaving...", 'low');
+            save();
+            setTimeout(autosave, _autosaveInterval);
+        }
+        setTimeout(autosave, _autosaveInterval);
+    }
+
+    function notify(message, priority = "low") {
+        if (!message) return;
+        if (!(priority === "low" || priority === "med" || priority === "high")) return;
+
+        console.log("Notification: " + message);
+
+        let timeoutDuration = 0;
+
+        let $element = $('<div>', {
+            "class": `notification prio-${priority}`
+        })
+        .appendTo("div#notifications")
+        .text(message);
+
+        if (priority === "high") {
+            timeoutDuration = 10000;
+        } else if (priority === "med") {
+            timeoutDuration = 4000;
+        } else {
+            timeoutDuration = 2000;
+        }
+
+        setTimeout(event => {
+            $element.remove();
+        }, timeoutDuration);
     }
 
     function addCharacters(newCharacters, list = resetCharacters()) {
@@ -968,10 +1048,77 @@ var csde = (function csdeMaster(){
         return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
     }
 
+    function exportJSON(fileLocation) {
+        if (!fileLocation) {
+            // TODO: Prompt for file location
+        }
+        // TODO: Offer a file of some kind
+        _saveObject.currentFile = null;
+    }
+
+    function importJSON(fileLocation) {
+        if (!fileLocation) {
+            // TODO: Prompt for file location
+        }
+        // TODO: Load from an external file
+    }
+
+    function save() {
+        // notify("Saving...", "low");
+
+        let json = JSON.stringify(_graph.toJSON());
+        if (_isElectron) {
+            //;
+
+            mkdirp(_getSafefileLocation(), err => {
+                if (err) throw err;
+            });
+            fs.writeFile(_getSafefileLocation(_getSafefileName()), json, 'utf8', err => {
+                if (err) throw err;
+            });
+        } else {
+            localStorage.setItem(_getSafefileName(), json);
+        }
+
+        // _saveObject.currentFile = fileName;
+        notify("Saved.", "med");
+    }
+
+    function load() {
+        let handleData = function (jsonText) {
+            let json = JSON.parse(jsonText);
+            if (json) {
+                notify("Data found, loading...", 'low');
+                _graph.clear();
+                _graph.fromJSON(json);
+            }
+        };
+        if (_isElectron) {
+            mkdirp(_getSafefileLocation(), err => {
+                if (err) throw err;
+            });
+
+            fs.readFile(_getSafefileLocation(_getSafefileName()), 'utf8', (err,data) => {
+                if (err) {
+                    if (err.code === "ENOENT") return;
+                        else throw err;
+                }
+                handleData(data);
+            });
+        } else {
+            handleData(localStorage.getItem(_getSafefileName()));
+        }
+    }
+
     return {
         addCharacter: character => _characters = addCharacter(character, _characters),
         addCharacters: characters => _characters = addCharacters(characters, _characters),
         clearCharacters: () => _characters = resetCharacters(),
+        save: save,
+        load: load,
+        import: importJSON,
+        export: importJSON,
+        notify: notify,
         start: initialize
     };
 })();

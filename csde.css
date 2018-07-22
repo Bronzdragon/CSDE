@@ -50,6 +50,14 @@ html, body {
 	background-color: #202229;
 }
 
+#notifications{
+	position: fixed;
+	padding: 5px;
+	z-index: 3;
+	right: 20px;
+	bottom: 20px;
+}
+
 /* Node styles */
 
 /***********************

@@ -1,13 +1,29 @@
 /* jshint esversion: 6 */
+let _userAgent = navigator.userAgent.toLowerCase();
+let _isElectron = _userAgent.indexOf(' electron/') > -1;
+
+
+//let fs, os, path, mkdirp;
+if (_isElectron) {
+    console.log("Including requirements!");
+    var fs = require('fs');
+    var os = require('os');
+    var path = require('path');
+    var mkdirp = require('mkdirp');
+}
 
 var csde = (function csdeMaster(){
+    const _autosaveInterval = 100000;
 
     let _globalLinkValue = null;
 
     let _$container = null;
     let _graph = null;
     let _characters = resetCharacters();
-    let _mouseObj = {};
+    let _mouseObj = {
+        panning: false,
+        position: { x: 0, y: 0 }
+    };
 
     const _defaultLink = new joint.dia.Link({
         router: { name: 'metro' },
@@ -377,7 +393,7 @@ var csde = (function csdeMaster(){
                 '<textarea class="speech" rows="4" cols="27" placeholder="¶"></textarea>' +
                 '<div class="left">' +
                     '<button class="delete">x</button>' +
-                    '<img class="portrait" alt="Character portrait" src="images\\characters\\unknown.png" />' +
+                    '<img class="portrait" alt="Character portrait" src="" />' +
                     '<select class="actor" />' +
                 '</div>' +
             '</div>',
@@ -460,12 +476,13 @@ var csde = (function csdeMaster(){
         updateBox: function() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
-            let selectedChar = _characters.find(element => element.name === this.model.get('actor'));
-            if (!selectedChar) { selectedChar = _characters.find(element => element.name === 'unknown'); }
+            let selectedChar = _characters.find(element => element.name === this.model.get("actor"));
+            if (!selectedChar) { selectedChar = _characters.find(element => element.name === "unknown"); }
 
             let imageURL = `.\\images\\characters\\${selectedChar.url}`;
             this._testImage(imageURL).catch(error => {
-                imageURL = ".\\images\\characters\\unknown.png";
+                console.error('This character does not have a valid image.\nCharacter name: "' + selectedChar.name + '", Location: "' + imageURL + '"');
+                imageURL = ".\\images\\characters\\" + _characters.find(element => element.name === "unknown").url;
             }).then(() => {
                 this.$box.$img.attr({
                     'src': imageURL,
@@ -685,7 +702,6 @@ var csde = (function csdeMaster(){
         },
     });
 
-
     function _generateId(length = 16, prefix = "id_"){
         if (!(Number.isInteger(length = Number(length)) || length < 1)){ return null; }
         let seed = "";
@@ -699,7 +715,6 @@ var csde = (function csdeMaster(){
     	// Prevent linking to itself.
     	if (magnetSource == magnetTarget || cellViewSource == cellViewTarget)
     		return false;
-
 
         // Prevent inputs/outputs from linking to themselves
         let targetType = magnetTarget.getAttribute("class").includes("output") ? "output" : "input";
@@ -746,6 +761,24 @@ var csde = (function csdeMaster(){
         _graph.addCell(new nodeType ({ position: location }));
     }
 
+    function _handleFile(fileBlob) {
+        // let fileBlob = this.files[0];
+
+        if (fileBlob.type !== "application/json") {
+            notify("Unsupported file.", "high");
+            return;
+        }
+
+        let reader = new FileReader();
+
+        reader.onloadend = event => {
+
+            load(event.target.result);
+        };
+
+        reader.readAsText(fileBlob); // Get the first file (There should be only one anyway)
+    }
+
     function _addContextMenus(element) {
         $.contextMenu({
             selector: 'div#paper',
@@ -780,12 +813,39 @@ var csde = (function csdeMaster(){
                 'data': {
                     name: 'Data management',
                     items: {
-                        'import': {name: "Import from file"},
-                        'export-csde': {name: "Export (CSDE format)"},
-                        'export-uvnp': {name: "Export (UVNP format)"},
-                        'save': {name: "Manual Save"},
-                        'load': {name: "Manual Load"},
-                        'new': {name: 'Open blank file'}
+                        'import': {
+                            name: "Import from file",
+                            callback: () => {
+                                let $file = $('<input type="file" accept="application/json,.json" />')
+                                .hide()
+                                .on('change', function () {
+                                    _handleFile(this.files[0]); // We care about only the first file.
+                                    $file.remove();
+                                })
+                                .appendTo("body")
+                                .click();
+                            }
+                        }, 'export-csde': {
+                            name: "Export (CSDE format)",
+                            callback: () => {
+                                let $link = $("<a>").
+                                attr({
+                                    "download": "export.json",
+                                    "href": `data:application/json,${encodeURIComponent(JSON.stringify(_graph.toJSON()))}`,
+                                    "target": "_blank"
+                                })
+                                .hide();
+
+                                $('body').append($link);
+                                $link[0].click();
+                                $link.remove();
+                            }
+                        }, 'export-uvnp': {
+                            name: "Export (UVNP format)"
+                        },'new': {
+                            name: 'Open blank file',
+                            callback: () => _graph.clear()
+                        }
                     }
                 }
             }
@@ -816,9 +876,6 @@ var csde = (function csdeMaster(){
     }
 
     function _registerPanning(paper, element) {
-        _mouseObj.panning = false;
-        _mouseObj.position = { x: 0, y: 0 };
-
         paper.on('blank:pointerdown', (event, x, y) =>{
             _mouseObj.panning = true;
             _mouseObj.position = {x: event.pageX, y: event.pageY};
@@ -838,6 +895,31 @@ var csde = (function csdeMaster(){
             _mouseObj.panning = false;
             $('body').css('cursor', 'default');
         });
+    }
+
+    function _registerHotkeys(element) {
+        $(window).keypress(event => {
+            if(event.ctrlKey && event.key === 'o'){
+                // TODO: Tie this to import.
+            }
+            if(event.ctrlKey && event.key === 's'){
+                //console.log("Gotta save!");
+                save();
+                /*if (!_saveObject.fileName) {
+                    //_saveObject.fileName = prompt("What would you like your file to be called?", "default.json");
+                }*/
+
+                event.preventDefault();
+            }
+        });
+    }
+
+    function _getSafefileName() {
+        return "csde.json";
+    }
+
+    function _getSafefileLocation(filename = '') {
+        return path.join(os.homedir(), ".csde", filename);
     }
 
     function initialize(baseElement, {width = 800, height = 600} = {}) {
@@ -882,72 +964,135 @@ var csde = (function csdeMaster(){
             $('div#drop-menu').contextMenu({x: x, y: y});
         });
 
+        _paper.on("blank:pointerdblclick", () =>{
+            //joint.util.toggleFullScreen(_paper.el);
+
+        });
+
         /* Might cause performance issues on large graphs. Will have to investigate */
         _graph.on('change:position add', function(cell) {
             for (let link of _graph.getLinks()) {
                 _paper.findViewByModel(link).update();
-                _paper.fitToContent({padding: 4000})
+                _paper.fitToContent({padding: 4000});
             }
+        });
+
+        /* Requirements for drag/drop import */
+        _$container.$paper.on("dragenter", event => {
+            event.stopPropagation();
+            event.preventDefault();
+        });
+        _$container.$paper.on("dragover", event => {
+            event.stopPropagation();
+            event.preventDefault();
+            event.originalEvent.dataTransfer.dropEffect = 'copy';
+        });
+        _$container.$paper.on("drop", event => {
+            event.stopPropagation();
+            event.preventDefault();
+
+            let file = event.originalEvent.dataTransfer.files[0]; // We're only intersted in one file.
+            _handleFile(file);
         });
 
         joint.shapes.basic.Generic.define('svg.Gradient', {
             markup:
-`<defs>
-    <linearGradient id="CharacterColour">
-      <stop offset="0%" stop-color=" #abbaab" />
-      <stop offset="24%" stop-color="#ffffff" />
+                `<defs>
+                    <linearGradient id="CharacterColour">
+                        <stop offset="0%" stop-color=" #abbaab"/>
+                        <stop offset="24%" stop-color="#ffffff"/>
 
-      <stop offset="24%" stop-color="#F82" />
-      <stop offset="95%" stop-color="#FF6" />
-      <stop offset="100%" stop-color="#FF8" />
-    </linearGradient>
-
-    <linearGradient id="ChoiceColour">
-        <stop offset="0%" stop-color="#F82" />
-        <stop offset="100%" stop-color="#FF8" />
-    </linearGradient>
-
-    <linearGradient id="InputPort">
-        <stop offset="0%" stop-color="#D33" />
-        <stop offset="85%" stop-color="#311" />
-        <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
-    </linearGradient>
-
-    <linearGradient id="InputPort">
-        <stop offset="0%" stop-color="#DD3333"></stop>
-        <stop offset="85%" stop-color="#331111"></stop>
-        <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
-    </linearGradient>
-
-    <linearGradient id="OutPort">
-        <stop offset="0%" stop-color="#DDD" />
-        <stop offset="85%" stop-color="#333" />
-        <stop offset="100%" stop-color="rgba(17,17,17,0.0)" />
-    </linearGradient>
-
-    <linearGradient id="OutPortRight">
-        <stop offset="0%" stop-color="rgba(17,17,17,0.0)" />
-        <stop offset="15%" stop-color="#333" />
-        <stop offset="100%" stop-color="#DDD" />
-    </linearGradient>
-
-    <linearGradient id="OutPortRightFull">
-        <stop offset="0%" stop-color="#abbaab" />
-        <stop offset="15%" stop-color="#333" />
-        <stop offset="100%" stop-color="#DDD" />
-    </linearGradient>
-
-    <radialGradient id="OutPortRad"  cx="1.25" cy="1.25" r="1.25">
-        <stop offset="0%" stop-color="#DDD"/>
-        <stop offset="100%" stop-color="#333"/>
-      </radialGradient>
-</defs>`});
+                        <stop offset="24%" stop-color="#F82"/>
+                        <stop offset="95%" stop-color="#FF6"/>
+                        <stop offset="100%" stop-color="#FF8"/>
+                    </linearGradient>
+                    <linearGradient id="ChoiceColour">
+                        <stop offset="0%" stop-color="#F82"/>
+                        <stop offset="100%" stop-color="#FF8"/>
+                    </linearGradient>
+                    <linearGradient id="InputPort">
+                        <stop offset="0%" stop-color="#D33"/>
+                        <stop offset="85%" stop-color="#311"/>
+                        <stop offset="100%" stop-color="rgba(51,17,17,0.0)"/>
+                    </linearGradient>
+                    <linearGradient id="InputPort">
+                        <stop offset="0%" stop-color="#DD3333"/>
+                        <stop offset="85%" stop-color="#331111"/>
+                        <stop offset="100%" stop-color="rgba(51,17,17,0.0)"/>
+                    </linearGradient>
+                    <linearGradient id="OutPort">
+                        <stop offset="0%" stop-color="#DDD"/>
+                        <stop offset="85%" stop-color="#333"/>
+                        <stop offset="100%" stop-color="rgba(17,17,17,0.0)"/>
+                    </linearGradient>
+                    <linearGradient id="OutPortRight">
+                        <stop offset="0%" stop-color="rgba(17,17,17,0.0)"/>
+                        <stop offset="15%" stop-color="#333"/>
+                        <stop offset="100%" stop-color="#DDD"/>
+                    </linearGradient>
+                    <linearGradient id="OutPortRightFull">
+                        <stop offset="0%" stop-color="#abbaab"/>
+                        <stop offset="15%" stop-color="#333"/>
+                        <stop offset="100%" stop-color="#DDD"/>
+                    </linearGradient>
+                    <radialGradient id="OutPortRad" cx="1.25" cy="1.25" r="1.25">
+                        <stop offset="0%" stop-color="#DDD"/>
+                        <stop offset="100%" stop-color="#333"/>
+                    </radialGradient>
+                </defs>`
+        });
 
         _graph.addCell(new joint.shapes.svg.Gradient());
 
         _addContextMenus(_$container);
 
         _registerPanning(_paper, _$container);
+
+        _registerHotkeys(_$container);
+
+        /* Load if there is a state */
+        load();
+
+        /* Enable autosave */
+        function autosave() {
+            notify("Autosaving...", 'low');
+            save();
+            setTimeout(autosave, _autosaveInterval);
+        }
+        setTimeout(autosave, _autosaveInterval);
+
+        /* Set up drag importing */
+        _$container.on('drop', event => {
+            let files = evt.dataTransfer.files;
+        });
+
+    }
+
+    function notify(message, priority = "low") {
+        if (!message) return;
+        if (!(priority === "low" || priority === "med" || priority === "high")) return;
+
+        console.log("Notification: " + message);
+
+        let timeoutDuration = 0;
+
+        let $element = $('<div>', {
+            "class": `notification prio-${priority}`
+        })
+        .appendTo("div#notifications")
+        .text(message);
+
+        if (priority === "high") {
+            timeoutDuration = 10000;
+        } else if (priority === "med") {
+            timeoutDuration = 4000;
+        } else {
+            timeoutDuration = 2000;
+        }
+
+        setTimeout(event => {
+            $element.remove();
+        }, timeoutDuration);
     }
 
     function addCharacters(newCharacters, list = resetCharacters()) {
@@ -968,10 +1113,63 @@ var csde = (function csdeMaster(){
         return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
     }
 
+    function save() {
+        let json = JSON.stringify(_graph.toJSON());
+        if (_isElectron) {
+            mkdirp(_getSafefileLocation(), err => {
+                if (err) throw err;
+            });
+            fs.writeFile(_getSafefileLocation(_getSafefileName()), json, 'utf8', err => {
+                if (err) throw err;
+            });
+        } else {
+            localStorage.setItem(_getSafefileName(), json);
+        }
+
+        notify("Saved.", "med");
+    }
+
+    function load(dataText = null) {
+        let handleData = function (jsonText) {
+            let json = JSON.parse(jsonText);
+            if (json) {
+                notify("Data found, loading...", 'low');
+                _graph.clear();
+                _graph.fromJSON(json);
+            }
+        };
+
+        if (dataText) {
+            handleData(dataText);
+            return;
+        }
+
+        if (_isElectron) {
+            mkdirp(_getSafefileLocation(), err => {
+                if (err) throw err;
+            });
+
+            fs.readFile(_getSafefileLocation(_getSafefileName()), 'utf8', (err,data) => {
+                if (err) {
+                    if (err.code === "ENOENT") return;
+                        else throw err;
+                }
+                handleData(data);
+            });
+            return;
+        } else {
+            handleData(localStorage.getItem(_getSafefileName()));
+            return;
+        }
+    }
+
     return {
         addCharacter: character => _characters = addCharacter(character, _characters),
         addCharacters: characters => _characters = addCharacters(characters, _characters),
         clearCharacters: () => _characters = resetCharacters(),
+        save: save,
+        load: load,
+        notify: notify,
         start: initialize
     };
 })();

@@ -761,6 +761,24 @@ var csde = (function csdeMaster(){
         _graph.addCell(new nodeType ({ position: location }));
     }
 
+    function _handleFile(fileBlob) {
+        // let fileBlob = this.files[0];
+
+        if (fileBlob.type !== "application/json") {
+            notify("Unsupported file.", "high");
+            return;
+        }
+
+        let reader = new FileReader();
+
+        reader.onloadend = event => {
+
+            load(event.target.result);
+        };
+
+        reader.readAsText(fileBlob); // Get the first file (There should be only one anyway)
+    }
+
     function _addContextMenus(element) {
         $.contextMenu({
             selector: 'div#paper',
@@ -801,22 +819,7 @@ var csde = (function csdeMaster(){
                                 let $file = $('<input type="file" accept="application/json,.json" />')
                                 .hide()
                                 .on('change', function () {
-                                    let file = this.files[0];
-
-                                    if (file.type !== "application/json") {
-                                        notify("Unsupported file.", "high");
-                                        return;
-                                    }
-                                    
-                                    let reader = new FileReader();
-
-                                    console.log(file.type);
-                                    reader.onloadend = event => {
-
-                                        load(event.target.result);
-                                    };
-
-                                    reader.readAsText(file); // Get the first file (There should be only one anyway)
+                                    _handleFile(this.files[0]); // We care about only the first file.
                                     $file.remove();
                                 })
                                 .appendTo("body")
@@ -971,6 +974,24 @@ var csde = (function csdeMaster(){
             for (let link of _graph.getLinks()) {
                 _paper.findViewByModel(link).update();
             }
+        });
+
+        /* Requirements for drag/drop import */
+        _$container.$paper.on("dragenter", event => {
+            event.stopPropagation();
+            event.preventDefault();
+        });
+        _$container.$paper.on("dragover", event => {
+            event.stopPropagation();
+            event.preventDefault();
+            event.originalEvent.dataTransfer.dropEffect = 'copy';
+        });
+        _$container.$paper.on("drop", event => {
+            event.stopPropagation();
+            event.preventDefault();
+
+            let file = event.originalEvent.dataTransfer.files[0]; // We're only intersted in one file.
+            _handleFile(file);
         });
 
         joint.shapes.basic.Generic.define('svg.Gradient', {

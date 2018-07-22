@@ -5,7 +5,7 @@ require('electron-debug')();
 let mainWindow = null;
 
 function createWindow() {
-    mainWindow = new BrowserWindow({ width: 800, height: 600});
+    mainWindow = new BrowserWindow({ width: 800, height: 600 });
     mainWindow.setBackgroundColor("#222");
 
     mainWindow.setMenu(null);

@@ -13,7 +13,7 @@ if (_isElectron) {
 }
 
 var csde = (function csdeMaster(){
-    const _autosaveInterval = 10000;
+    const _autosaveInterval = 100000;
 
     let _globalLinkValue = null;
 
@@ -761,6 +761,24 @@ var csde = (function csdeMaster(){
         _graph.addCell(new nodeType ({ position: location }));
     }
 
+    function _handleFile(fileBlob) {
+        // let fileBlob = this.files[0];
+
+        if (fileBlob.type !== "application/json") {
+            notify("Unsupported file.", "high");
+            return;
+        }
+
+        let reader = new FileReader();
+
+        reader.onloadend = event => {
+
+            load(event.target.result);
+        };
+
+        reader.readAsText(fileBlob); // Get the first file (There should be only one anyway)
+    }
+
     function _addContextMenus(element) {
         $.contextMenu({
             selector: 'div#paper',
@@ -796,10 +814,32 @@ var csde = (function csdeMaster(){
                     name: 'Data management',
                     items: {
                         'import': {
-                            name: "Import from file"
+                            name: "Import from file",
+                            callback: () => {
+                                let $file = $('<input type="file" accept="application/json,.json" />')
+                                .hide()
+                                .on('change', function () {
+                                    _handleFile(this.files[0]); // We care about only the first file.
+                                    $file.remove();
+                                })
+                                .appendTo("body")
+                                .click();
+                            }
                         }, 'export-csde': {
                             name: "Export (CSDE format)",
-                            callback: exportJSON
+                            callback: () => {
+                                let $link = $("<a>").
+                                attr({
+                                    "download": "export.json",
+                                    "href": `data:application/json,${encodeURIComponent(JSON.stringify(_graph.toJSON()))}`,
+                                    "target": "_blank"
+                                })
+                                .hide();
+
+                                $('body').append($link);
+                                $link[0].click();
+                                $link.remove();
+                            }
                         }, 'export-uvnp': {
                             name: "Export (UVNP format)"
                         },'new': {
@@ -937,58 +977,70 @@ var csde = (function csdeMaster(){
             }
         });
 
+        /* Requirements for drag/drop import */
+        _$container.$paper.on("dragenter", event => {
+            event.stopPropagation();
+            event.preventDefault();
+        });
+        _$container.$paper.on("dragover", event => {
+            event.stopPropagation();
+            event.preventDefault();
+            event.originalEvent.dataTransfer.dropEffect = 'copy';
+        });
+        _$container.$paper.on("drop", event => {
+            event.stopPropagation();
+            event.preventDefault();
+
+            let file = event.originalEvent.dataTransfer.files[0]; // We're only intersted in one file.
+            _handleFile(file);
+        });
+
         joint.shapes.basic.Generic.define('svg.Gradient', {
             markup:
-`<defs>
-    <linearGradient id="CharacterColour">
-      <stop offset="0%" stop-color=" #abbaab" />
-      <stop offset="24%" stop-color="#ffffff" />
+                `<defs>
+                    <linearGradient id="CharacterColour">
+                        <stop offset="0%" stop-color=" #abbaab"/>
+                        <stop offset="24%" stop-color="#ffffff"/>
 
-      <stop offset="24%" stop-color="#F82" />
-      <stop offset="95%" stop-color="#FF6" />
-      <stop offset="100%" stop-color="#FF8" />
-    </linearGradient>
-
-    <linearGradient id="ChoiceColour">
-        <stop offset="0%" stop-color="#F82" />
-        <stop offset="100%" stop-color="#FF8" />
-    </linearGradient>
-
-    <linearGradient id="InputPort">
-        <stop offset="0%" stop-color="#D33" />
-        <stop offset="85%" stop-color="#311" />
-        <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
-    </linearGradient>
-
-    <linearGradient id="InputPort">
-        <stop offset="0%" stop-color="#DD3333"></stop>
-        <stop offset="85%" stop-color="#331111"></stop>
-        <stop offset="100%" stop-color="rgba(51,17,17,0.0)" />
-    </linearGradient>
-
-    <linearGradient id="OutPort">
-        <stop offset="0%" stop-color="#DDD" />
-        <stop offset="85%" stop-color="#333" />
-        <stop offset="100%" stop-color="rgba(17,17,17,0.0)" />
-    </linearGradient>
-
-    <linearGradient id="OutPortRight">
-        <stop offset="0%" stop-color="rgba(17,17,17,0.0)" />
-        <stop offset="15%" stop-color="#333" />
-        <stop offset="100%" stop-color="#DDD" />
-    </linearGradient>
-
-    <linearGradient id="OutPortRightFull">
-        <stop offset="0%" stop-color="#abbaab" />
-        <stop offset="15%" stop-color="#333" />
-        <stop offset="100%" stop-color="#DDD" />
-    </linearGradient>
-
-    <radialGradient id="OutPortRad"  cx="1.25" cy="1.25" r="1.25">
-        <stop offset="0%" stop-color="#DDD"/>
-        <stop offset="100%" stop-color="#333"/>
-      </radialGradient>
-</defs>`});
+                        <stop offset="24%" stop-color="#F82"/>
+                        <stop offset="95%" stop-color="#FF6"/>
+                        <stop offset="100%" stop-color="#FF8"/>
+                    </linearGradient>
+                    <linearGradient id="ChoiceColour">
+                        <stop offset="0%" stop-color="#F82"/>
+                        <stop offset="100%" stop-color="#FF8"/>
+                    </linearGradient>
+                    <linearGradient id="InputPort">
+                        <stop offset="0%" stop-color="#D33"/>
+                        <stop offset="85%" stop-color="#311"/>
+                        <stop offset="100%" stop-color="rgba(51,17,17,0.0)"/>
+                    </linearGradient>
+                    <linearGradient id="InputPort">
+                        <stop offset="0%" stop-color="#DD3333"/>
+                        <stop offset="85%" stop-color="#331111"/>
+                        <stop offset="100%" stop-color="rgba(51,17,17,0.0)"/>
+                    </linearGradient>
+                    <linearGradient id="OutPort">
+                        <stop offset="0%" stop-color="#DDD"/>
+                        <stop offset="85%" stop-color="#333"/>
+                        <stop offset="100%" stop-color="rgba(17,17,17,0.0)"/>
+                    </linearGradient>
+                    <linearGradient id="OutPortRight">
+                        <stop offset="0%" stop-color="rgba(17,17,17,0.0)"/>
+                        <stop offset="15%" stop-color="#333"/>
+                        <stop offset="100%" stop-color="#DDD"/>
+                    </linearGradient>
+                    <linearGradient id="OutPortRightFull">
+                        <stop offset="0%" stop-color="#abbaab"/>
+                        <stop offset="15%" stop-color="#333"/>
+                        <stop offset="100%" stop-color="#DDD"/>
+                    </linearGradient>
+                    <radialGradient id="OutPortRad" cx="1.25" cy="1.25" r="1.25">
+                        <stop offset="0%" stop-color="#DDD"/>
+                        <stop offset="100%" stop-color="#333"/>
+                    </radialGradient>
+                </defs>`
+        });
 
         _graph.addCell(new joint.shapes.svg.Gradient());
 
@@ -1061,30 +1113,6 @@ var csde = (function csdeMaster(){
         return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
     }
 
-    function exportJSON() {
-        console.log("Exporting JSON");
-        let $link = $("<a>").
-        attr({
-            "download": "export.json",
-            "href": `data:application/json,${encodeURIComponent(JSON.stringify(_graph.toJSON()))}`,
-            "target": "_blank"
-        })
-        .hide();
-
-        $('body').append($link);
-        $link[0].click();
-        $link.remove();
-
-        // TODO: Offer a file of some kind
-    }
-
-    function importJSON(fileLocation) {
-        if (!fileLocation) {
-            // TODO: Prompt for file location
-        }
-        // TODO: Load from an external file
-    }
-
     function save() {
         let json = JSON.stringify(_graph.toJSON());
         if (_isElectron) {
@@ -1101,7 +1129,7 @@ var csde = (function csdeMaster(){
         notify("Saved.", "med");
     }
 
-    function load() {
+    function load(dataText = null) {
         let handleData = function (jsonText) {
             let json = JSON.parse(jsonText);
             if (json) {
@@ -1110,6 +1138,12 @@ var csde = (function csdeMaster(){
                 _graph.fromJSON(json);
             }
         };
+
+        if (dataText) {
+            handleData(dataText);
+            return;
+        }
+
         if (_isElectron) {
             mkdirp(_getSafefileLocation(), err => {
                 if (err) throw err;
@@ -1122,8 +1156,10 @@ var csde = (function csdeMaster(){
                 }
                 handleData(data);
             });
+            return;
         } else {
             handleData(localStorage.getItem(_getSafefileName()));
+            return;
         }
     }
 
@@ -1133,8 +1169,6 @@ var csde = (function csdeMaster(){
         clearCharacters: () => _characters = resetCharacters(),
         save: save,
         load: load,
-        import: importJSON,
-        export: importJSON,
         notify: notify,
         start: initialize
     };

@@ -13,7 +13,30 @@ if (_isElectron) {
 }
 
 var csde = (function csdeMaster(){
-    const _autosaveInterval = 100000;
+    const _autosaveInterval = 60 * 1000; // autosave every minute
+
+    let autosave = new class {
+        constructor(interval = 10000) {
+            this.interval = interval;
+            this._timeoutId = null;
+        }
+
+        start () {
+            if (this.timeoutId) this.stop();
+
+            this.timeoutId = window.setTimeout(() => this._autosave(), this.interval);
+        }
+
+        stop (){
+            window.clearTimeout(this.timeoutId);
+            this.timeoutId = null;
+        }
+
+        _autosave(){
+            save();
+            this.start();
+        }
+    }(_autosaveInterval);
 
     let _globalLinkValue = null;
 
@@ -964,11 +987,6 @@ var csde = (function csdeMaster(){
             $('div#drop-menu').contextMenu({x: x, y: y});
         });
 
-        _paper.on("blank:pointerdblclick", () =>{
-            //joint.util.toggleFullScreen(_paper.el);
-
-        });
-
         /* Might cause performance issues on large graphs. Will have to investigate */
         _graph.on('change:position add', function(cell) {
             for (let link of _graph.getLinks()) {
@@ -1054,18 +1072,7 @@ var csde = (function csdeMaster(){
         load();
 
         /* Enable autosave */
-        function autosave() {
-            notify("Autosaving...", 'low');
-            save();
-            setTimeout(autosave, _autosaveInterval);
-        }
-        setTimeout(autosave, _autosaveInterval);
-
-        /* Set up drag importing */
-        _$container.on('drop', event => {
-            let files = evt.dataTransfer.files;
-        });
-
+        //autosave.start();
     }
 
     function notify(message, priority = "low") {
@@ -1170,6 +1177,7 @@ var csde = (function csdeMaster(){
         save: save,
         load: load,
         notify: notify,
+        autosave: autosave,
         start: initialize
     };
 })();

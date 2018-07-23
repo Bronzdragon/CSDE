@@ -2,8 +2,6 @@
 let _userAgent = navigator.userAgent.toLowerCase();
 let _isElectron = _userAgent.indexOf(' electron/') > -1;
 
-
-//let fs, os, path, mkdirp;
 if (_isElectron) {
     console.log("Including requirements!");
     var fs = require('fs');
@@ -82,7 +80,7 @@ var csde = (function csdeMaster(){
                     }
                 }
             }
-        },
+        }
     });
     joint.shapes.dialogue.BaseView = joint.dia.ElementView.extend({
         template:
@@ -132,45 +130,36 @@ var csde = (function csdeMaster(){
         removeBox: function(event) { this.$box.remove(); },
 
         addMagnets: function(){
-            this.model.input = {
-                group: "input",
-                markup: "<rect /><use />",
-                attrs: {
-                    rect: {
-                        class: "magnet input left",
-                        magnet: true,
-                        width: _style.magnet.left.width,
-                        height: this.model.get('size').height / 2
-                    },
-                    /*use: {
-                        href: "./images/input-output-symbols.svg#input-left",
-                        width: _style.icon.width,
-                        height: _style.icon.height,
-                        x: (_style.magnet.left.width - _style.icon.width) / 2,
-                        y: ((this.model.get('size').height / 2) - _style.icon.height) / 2
-                    }*/
-                }
-            };
-            this.model.output = {
-                group: "output",
-                markup: "<rect /><use />",
-                attrs: {
-                    rect: {
-                        class: "magnet output left",
-                        magnet: true,
-                        width: _style.magnet.left.width,
-                        height: this.model.get('size').height / 2
-                    },
-                    /*use: {
-                        href: "./images/input-output-symbols.svg#output-left",
-                        width: _style.icon.width,
-                        height: _style.icon.height,
-                        x: (_style.magnet.left.width - _style.icon.width) / 2,
-                        y: ((this.model.get('size').height / 2) - _style.icon.height) / 2
-                    }*/
-                }
-            };
-            this.model.addPorts([this.model.input, this.model.output]);
+            if (!this.model.get('input')) {
+                this.model.set("input", {
+                    group: "input",
+                    markup: "<rect /><use />",
+                    attrs: {
+                        rect: {
+                            class: "magnet input left",
+                            magnet: true,
+                            width: _style.magnet.left.width,
+                            height: this.model.get('size').height / 2
+                        }
+                    }
+                });
+                this.model.addPort(this.model.get('input'));
+            }
+            if (!this.model.get('output')) {
+                this.model.set("output", {
+                    group: "output",
+                    markup: "<rect /><use />",
+                    attrs: {
+                        rect: {
+                            class: "magnet output left",
+                            magnet: true,
+                            width: _style.magnet.left.width,
+                            height: this.model.get('size').height / 2
+                        },
+                    }
+                });
+                this.model.addPort(this.model.get('output'));
+            }
         }
     });
 
@@ -355,6 +344,7 @@ var csde = (function csdeMaster(){
             }
 
         },
+
         addMagnets: function(){
             this.model.input = {
                 group: "input",

@@ -456,13 +456,30 @@ var csde = (function csdeMaster(){
                 let new_box = new joint.shapes.dialogue.Text({
                     position: {x: bounding_box.x , y: bounding_box.y + bounding_box.height + (_gridSize * 1)}
                 });
-                _graph.addCell(new_box); // The box has to be added to the graph before the ports become available.
+
+                let parentActor = "";
+                let portId = this.model.getPorts().find(port => port.group === "input").id;
+
+                for (let link of _graph.getConnectedLinks(this.model)) {
+                    // Make sure the link is connected to us.
+                    if (link.get('source').port !== portId && link.get('target').port !== portId) { continue; }
+
+                    let parent = link.getSourceElement() === this.model ? link.getTargetElement() : link.getSourceElement();
+                    if (parent.attributes.type !== "dialogue.Text") { continue; }
+
+                    parentActor = parent.get("actor");
+                    if (parentActor) { break; }
+                }
+
+                new_box.set("actor", parentActor);
 
                 let new_link = _defaultLink.clone();
+                _graph.addCell(new_box); // The box has to be added to the graph before the ports become available.
 
                 new_link.source({id: this.model.id, port: this.model.getPorts().find(element => element.group === "output").id });
                 new_link.target({id: new_box.id, port: new_box.getPorts().find(element => element.group === "input").id});
                 _graph.addCell(new_link);
+
 
                 new_box.trigger('focus');
                 event.preventDefault();

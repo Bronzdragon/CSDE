@@ -2,8 +2,6 @@
 let _userAgent = navigator.userAgent.toLowerCase();
 let _isElectron = _userAgent.indexOf(' electron/') > -1;
 
-
-//let fs, os, path, mkdirp;
 if (_isElectron) {
     console.log("Including requirements!");
     var fs = require('fs');
@@ -13,7 +11,30 @@ if (_isElectron) {
 }
 
 var csde = (function csdeMaster(){
-    const _autosaveInterval = 100000;
+    const _autosaveInterval = 60 * 1000; // autosave every minute
+
+    let autosave = new class {
+        constructor(interval = 10000) {
+            this.interval = interval;
+            this._timeoutId = null;
+        }
+
+        start () {
+            if (this.timeoutId) this.stop();
+
+            this.timeoutId = window.setTimeout(() => this._autosave(), this.interval);
+        }
+
+        stop (){
+            window.clearTimeout(this.timeoutId);
+            this.timeoutId = null;
+        }
+
+        _autosave(){
+            save();
+            this.start();
+        }
+    }(_autosaveInterval);
 
     let _globalLinkValue = null;
 
@@ -82,7 +103,7 @@ var csde = (function csdeMaster(){
                     }
                 }
             }
-        },
+        }
     });
     joint.shapes.dialogue.BaseView = joint.dia.ElementView.extend({
         template:
@@ -132,45 +153,36 @@ var csde = (function csdeMaster(){
         removeBox: function(event) { this.$box.remove(); },
 
         addMagnets: function(){
-            this.model.input = {
-                group: "input",
-                markup: "<rect /><use />",
-                attrs: {
-                    rect: {
-                        class: "magnet input left",
-                        magnet: true,
-                        width: _style.magnet.left.width,
-                        height: this.model.get('size').height / 2
-                    },
-                    /*use: {
-                        href: "./images/input-output-symbols.svg#input-left",
-                        width: _style.icon.width,
-                        height: _style.icon.height,
-                        x: (_style.magnet.left.width - _style.icon.width) / 2,
-                        y: ((this.model.get('size').height / 2) - _style.icon.height) / 2
-                    }*/
-                }
-            };
-            this.model.output = {
-                group: "output",
-                markup: "<rect /><use />",
-                attrs: {
-                    rect: {
-                        class: "magnet output left",
-                        magnet: true,
-                        width: _style.magnet.left.width,
-                        height: this.model.get('size').height / 2
-                    },
-                    /*use: {
-                        href: "./images/input-output-symbols.svg#output-left",
-                        width: _style.icon.width,
-                        height: _style.icon.height,
-                        x: (_style.magnet.left.width - _style.icon.width) / 2,
-                        y: ((this.model.get('size').height / 2) - _style.icon.height) / 2
-                    }*/
-                }
-            };
-            this.model.addPorts([this.model.input, this.model.output]);
+            if (!this.model.get('input')) {
+                this.model.set("input", {
+                    group: "input",
+                    markup: "<rect /><use />",
+                    attrs: {
+                        rect: {
+                            class: "magnet input left",
+                            magnet: true,
+                            width: _style.magnet.left.width,
+                            height: this.model.get('size').height / 2
+                        }
+                    }
+                });
+                this.model.addPort(this.model.get('input'));
+            }
+            if (!this.model.get('output')) {
+                this.model.set("output", {
+                    group: "output",
+                    markup: "<rect /><use />",
+                    attrs: {
+                        rect: {
+                            class: "magnet output left",
+                            magnet: true,
+                            width: _style.magnet.left.width,
+                            height: this.model.get('size').height / 2
+                        },
+                    }
+                });
+                this.model.addPort(this.model.get('output'));
+            }
         }
     });
 
@@ -193,7 +205,7 @@ var csde = (function csdeMaster(){
                 }
             }
         },
-        values: null, // A map structured like ID / {value: "choice", isDefault: false}
+        values: [] // An array of objects, {id: ID, value: text, isDefault: boolean}
     });
     joint.shapes.dialogue.MultiView = joint.shapes.dialogue.BaseView.extend({
         template:
@@ -221,7 +233,6 @@ var csde = (function csdeMaster(){
         '</div>',
 
         initialize: function() {
-            this.model.set('values', new Map());
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
 
             this.$box.$header = this.$box.find('div.header');
@@ -236,24 +247,39 @@ var csde = (function csdeMaster(){
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
             let values = this.model.get('values');
 
-            for (let [id, value] of values) {
-                let $choiceElement = this.$box.$choiceContainer.find('#' + id);
+            console.log(values);
 
-                if ($choiceElement.length > 0) { // If it has an associated element
-                    $choiceElement.val(value.value);
-                } else {
-                    // There is a value, but no element to go along with it!
-                    this.newElement(this.$box.$choiceContainer, id, value);
+            /* Loop over all existing ports, remove all orphans. */
+            for (let port of this.model.getPorts()) {
+                 /*jshint loopfunc: true */
+                if(port.group === "input") continue;
+                if (!values.find(entry => entry.id === port.id)) {
+                    this.model.removePort(port.id);
                 }
             }
 
+            /* Loop over all choice HTML elements, remove all orphans */
             for (let element of this.$box.$choiceContainer.children()) {
+                 /*jshint loopfunc: true */
                 let id = $(element).attr('id');
-                if (!values.has(id)) {
+                if (!values.find(entry => entry.id === id)) {
                     this.model.removePort(id);
                     $(element).remove();
                 }
             }
+
+            // Create containers for missing values
+            for (let {id, value, isDefault} of values) {
+                let $choiceElement = this.$box.$choiceContainer.find('#' + id);
+
+                if ($choiceElement.length > 0) { // If it has an associated element
+                    $choiceElement.val(value);
+                } else {
+                    // There is a value, but no element to go along with it!
+                    this.newElement(this.$box.$choiceContainer, id, {value: value, isDefault: isDefault});
+                }
+            }
+
 
             this.updateSize();
         },
@@ -270,7 +296,9 @@ var csde = (function csdeMaster(){
             $newChoice.$value = $newChoice.find('input.value');
             $newChoice.$value.on('input propertychange', event => {
                 let values = this.model.get('values');
-                values.set($newChoice.attr('id'), $(event.target).val());
+                let index = values.findIndex(obj => obj.id === $newChoice.attr('id'));
+                values[index].value = $(event.target).val();
+                //values.set($newChoice.attr('id'), $(event.target).val());
                 this.model.set('values', values);
             });
 
@@ -278,44 +306,40 @@ var csde = (function csdeMaster(){
             if (!choice.isDefault) {
                 $newChoice.$remove = $newChoice.find('button.remove');
                 $newChoice.$remove.click(event => {
-                this.model.get('values');
-                let values = this.model.get('values');
-                values.delete($newChoice.attr('id'));
-                this.model.set('values', values);
-                this.updateBox();
-            });
+                    this.model.get('values');
+                    let values = this.model.get('values');
+                    let index = values.findIndex(obj => obj.id === $newChoice.attr('id'));
+                    values.splice(index, 1);
+                    //values.delete($newChoice.attr('id'));
+                    this.model.set('values', values);
+                    this.updateBox();
+                });
             }
 
             $newChoice.appendTo(container);
 
-            this.model.addPort({
-                id: id,
-                group: "output",
-                markup: "<rect /><use />",
-                attrs: {
-                    rect: {
-                        class: "magnet output right",
-                        magnet: true,
-                        width: _style.magnet.right.width,
-                        height: _style.node.multi.section
-                    },
-                    /*use: {
-                        href: "./images/input-output-symbols.svg#output-right",
-                        width: _style.icon.width,
-                        height: _style.icon.height,
-                        x: (_style.magnet.right.width - _style.icon.width) / 2,
-                        y: (_style.node.multi.section - _style.icon.height) / 2
-                    }*/
-                }
-            });
+            if(!this.model.getPorts().find(port => port.id === id)){
+                this.model.addPort({
+                    id: id,
+                    group: "output",
+                    markup: "<rect /><use />",
+                    attrs: {
+                        rect: {
+                            class: "magnet output right",
+                            magnet: true,
+                            width: _style.magnet.right.width,
+                            height: _style.node.multi.section
+                        }
+                    }
+                });
+            }
 
             return $newChoice;
         },
 
-        addChoice: function(defaultValue = '', isDefault = false) {
+        addChoice: function(textValue = '', isDefault = false) {
             let values = this.model.get('values');
-
-            values.set(_generateId(), {value: defaultValue, isDefault: isDefault});
+            values.push({id: _generateId(), value: textValue, isDefault: isDefault});
             this.model.set('values', values);
             this.updateBox();
         },
@@ -340,7 +364,7 @@ var csde = (function csdeMaster(){
                     this.$box.$footer.outerHeight(true)
             });
 
-            for (const [id, value] of this.model.get("values")) {
+            for (const {id, value, isDefault} of this.model.get("values")) {
                 let index = this.$box.$choiceContainer.children().index(this.$box.$choiceContainer.find('#' + id));
 
                 let magnetPos = {
@@ -355,27 +379,23 @@ var csde = (function csdeMaster(){
             }
 
         },
+
         addMagnets: function(){
-            this.model.input = {
-                group: "input",
-                markup: "<rect /><use />",
-                attrs: {
-                    rect: {
-                        class: "magnet input left",
-                        magnet: true,
-                        width: _style.magnet.left.width,
-                        height: _style.magnet.left.height
-                    },
-                    /*use: {
-                        href: "./images/input-output-symbols.svg#input-left",
-                        width: _style.icon.width,
-                        height: _style.icon.height,
-                        x: (_style.magnet.left.width - _style.icon.width) / 2,
-                        y: (_style.magnet.left.height - _style.icon.height) / 2
-                    }*/
-                }
-            };
-            this.model.addPort(this.model.input);
+            if (!this.model.get('input')) {
+                this.model.set('input', {
+                    group: "input",
+                    markup: "<rect /><use />",
+                    attrs: {
+                        rect: {
+                            class: "magnet input left",
+                            magnet: true,
+                            width: _style.magnet.left.width,
+                            height: _style.magnet.left.height
+                        }
+                    }
+                });
+                this.model.addPort(this.model.get('input'));
+            }
         }
     });
 
@@ -436,13 +456,30 @@ var csde = (function csdeMaster(){
                 let new_box = new joint.shapes.dialogue.Text({
                     position: {x: bounding_box.x , y: bounding_box.y + bounding_box.height + (_gridSize * 1)}
                 });
-                _graph.addCell(new_box); // The box has to be added to the graph before the ports become available.
+
+                let parentActor = "";
+                let portId = this.model.getPorts().find(port => port.group === "input").id;
+
+                for (let link of _graph.getConnectedLinks(this.model)) {
+                    // Make sure the link is connected to us.
+                    if (link.get('source').port !== portId && link.get('target').port !== portId) { continue; }
+
+                    let parent = link.getSourceElement() === this.model ? link.getTargetElement() : link.getSourceElement();
+                    if (parent.attributes.type !== "dialogue.Text") { continue; }
+
+                    parentActor = parent.get("actor");
+                    if (parentActor) { break; }
+                }
+
+                new_box.set("actor", parentActor);
 
                 let new_link = _defaultLink.clone();
+                _graph.addCell(new_box); // The box has to be added to the graph before the ports become available.
 
                 new_link.source({id: this.model.id, port: this.model.getPorts().find(element => element.group === "output").id });
                 new_link.target({id: new_box.id, port: new_box.getPorts().find(element => element.group === "input").id});
                 _graph.addCell(new_link);
+
 
                 new_box.trigger('focus');
                 event.preventDefault();
@@ -645,7 +682,9 @@ var csde = (function csdeMaster(){
 
         initialize: function() {
             joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
-            this.addChoice();
+            if (this.model.get('values').length < 1) {
+                this.addChoice();
+            }
         }
     });
 
@@ -693,8 +732,12 @@ var csde = (function csdeMaster(){
                 this.model.set('userKey', $(event.target).val());
             });
 
-            this.addChoice('Default', true);
-            this.addChoice();
+            if (this.model.get('values').length < 1) {
+                this.addChoice('Default', true);
+            }
+            if (this.model.get('values').length < 2) {
+                this.addChoice();
+            }
         },
 
         updateBox: function() {
@@ -964,11 +1007,6 @@ var csde = (function csdeMaster(){
             $('div#drop-menu').contextMenu({x: x, y: y});
         });
 
-        _paper.on("blank:pointerdblclick", () =>{
-            //joint.util.toggleFullScreen(_paper.el);
-
-        });
-
         /* Might cause performance issues on large graphs. Will have to investigate */
         _graph.on('change:position add', function(cell) {
             for (let link of _graph.getLinks()) {
@@ -1054,18 +1092,7 @@ var csde = (function csdeMaster(){
         load();
 
         /* Enable autosave */
-        function autosave() {
-            notify("Autosaving...", 'low');
-            save();
-            setTimeout(autosave, _autosaveInterval);
-        }
-        setTimeout(autosave, _autosaveInterval);
-
-        /* Set up drag importing */
-        _$container.on('drop', event => {
-            let files = evt.dataTransfer.files;
-        });
-
+        //autosave.start();
     }
 
     function notify(message, priority = "low") {
@@ -1170,6 +1197,7 @@ var csde = (function csdeMaster(){
         save: save,
         load: load,
         notify: notify,
+        autosave: autosave,
         start: initialize
     };
 })();

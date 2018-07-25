@@ -11,35 +11,40 @@ if (_isElectron) {
 }
 
 var csde = (function csdeMaster(){
-    const _autosaveInterval = 60 * 1000; // autosave every minute
-
-    let autosave = new class {
-        constructor(interval = 10000) {
-            this.interval = interval;
+    class Autosaver{
+        constructor(interval = 60 * 1000) {
+            this._interval = interval;
             this._timeoutId = null;
+        }
+
+        get interval() {return this._interval;}
+        set interval(newInterval) {
+            newInterval = Number(newInterval);
+            if (newInterval < 1) { throw new TypeError("Invalid number, must be positive"); }
+            this._interval = newInterval;
         }
 
         start () {
             if (this.timeoutId) this.stop();
 
-            this.timeoutId = window.setTimeout(() => this._autosave(), this.interval);
+            this.timeoutId = window.setTimeout(() => this._autosave(), this._interval);
         }
 
-        stop (){
+        stop () {
             window.clearTimeout(this.timeoutId);
             this.timeoutId = null;
         }
 
-        _autosave(){
+        _autosave() {
             save();
             this.start();
         }
-    }(_autosaveInterval);
+    }
 
     let _globalLinkValue = null;
-
     let _$container = null;
     let _graph = null;
+    let autosave = new Autosaver();
     let _characters = resetCharacters();
     let _mouseObj = {
         panning: false,
@@ -65,6 +70,7 @@ var csde = (function csdeMaster(){
             'base':   { width: 250, height: 150 },
             'text':   { width: 500, height: 200 },
             'set':    { width: 250, height: 100 },
+            'note':    { width: 400, height: 100 },
             'multi':  { width: 300, height: 150, section: 50 },
             'choice': { width: 500, height: 200, section: 50 },
             'branch': { width: 250, height: 200, section: 50 }
@@ -653,6 +659,45 @@ var csde = (function csdeMaster(){
         }
     });
 
+    joint.shapes.dialogue.Base.define('dialogue.Note', {
+        size: { width: _style.node.note.width, height: _style.node.note.height },
+        // padding: 25,
+        noteText: null
+    });
+    joint.shapes.dialogue.NoteView = joint.shapes.dialogue.BaseView.extend({
+        template:
+        '<div class="node note">' +
+            '<textarea class="notetext" rows="1" placeholder="..."></textarea>' +
+            '<button class="delete">x</button>' +
+        '</div>',
+        padding: 25,
+
+        initialize: function() {
+            joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
+
+            this.$box.$note = this.$box.find("textarea");
+
+            this.$box.$note.width(_style.node.note.width - this.padding * 2);
+            this.$box.$note.css({top: this.padding, left: this.padding, position:'absolute'});
+
+            this.$box.$note.autoResize({animate: false, extraSpace: 0, onResize: () => this.updateBox()});
+            this.$box.$note.on('input', event => {
+                this.model.set('noteText', $(event.target).val());
+            });
+        },
+
+        updateBox: function() {
+            joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
+            this.model.resize(this.$box.$note.outerWidth() + this.padding * 2,
+                this.$box.$note.outerHeight() + this.padding *2);
+
+            this.$box.$note.text(this.model.get('noteText'));
+            this.$box.$note.trigger('keydown');
+        },
+
+        addMagnets: function() { /* Do nothing */ }
+    });
+
     joint.shapes.dialogue.Multi.define('dialogue.Choice', {
     });
     joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.MultiView.extend({
@@ -837,6 +882,7 @@ var csde = (function csdeMaster(){
                     case 'Text':
                     case 'Choice':
                     case 'Set':
+                    case 'Note':
                     case 'Branch':
                     case 'Base':
                     case 'Multi':
@@ -851,6 +897,7 @@ var csde = (function csdeMaster(){
                 'Choice': {name: 'Choice'},
                 'Set': {name: 'Set flag'},
                 'Branch': {name: 'Conditional branch'},
+                'Note': {name: 'Note'},
                 'Base': {name: 'DEBUG - base'},
                 'Multi': {name: 'DEBUG - multi'},
                 'data': {
@@ -1092,7 +1139,7 @@ var csde = (function csdeMaster(){
         load();
 
         /* Enable autosave */
-        //autosave.start();
+        autosave.start();
     }
 
     function notify(message, priority = "low") {

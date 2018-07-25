@@ -25,12 +25,12 @@ var csde = (function csdeMaster(){
             this.timeoutId = window.setTimeout(() => this._autosave(), this.interval);
         }
 
-        stop (){
+        stop () {
             window.clearTimeout(this.timeoutId);
             this.timeoutId = null;
         }
 
-        _autosave(){
+        _autosave() {
             save();
             this.start();
         }
@@ -65,6 +65,7 @@ var csde = (function csdeMaster(){
             'base':   { width: 250, height: 150 },
             'text':   { width: 500, height: 200 },
             'set':    { width: 250, height: 100 },
+            'note':    { width: 400, height: 100 },
             'multi':  { width: 300, height: 150, section: 50 },
             'choice': { width: 500, height: 200, section: 50 },
             'branch': { width: 250, height: 200, section: 50 }
@@ -653,6 +654,35 @@ var csde = (function csdeMaster(){
         }
     });
 
+    joint.shapes.dialogue.Base.define('dialogue.Note', {
+        size: { width: _style.node.note.width, height: _style.node.note.height },
+        noteText: null
+    });
+    joint.shapes.dialogue.NoteView = joint.shapes.dialogue.BaseView.extend({
+        template:
+        '<div class="node note">' +
+            '<button class="delete">x</button>' +
+            '<textarea class="notetext" rows="1" placeholder="..."></textarea>' +
+        '</div>',
+
+        initialize: function() {
+            joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
+            this.$box.$note = this.$box.find("textarea");
+            this.$box.$note.width(_style.node.note.width - 50);
+            this.$box.$note.autoResize();
+            this.$box.$note.on('input', event => {
+                this.model.set('noteText', $(event.target).val());
+            });
+        },
+
+        updateBox: function() {
+            joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
+            this.model.resize(this.$box.$note.outerWidth() + 40, this.$box.$note.outerHeight() + 40);
+        },
+
+        addMagnets: function() { /* Do nothing */ }
+    });
+
     joint.shapes.dialogue.Multi.define('dialogue.Choice', {
     });
     joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.MultiView.extend({
@@ -837,6 +867,7 @@ var csde = (function csdeMaster(){
                     case 'Text':
                     case 'Choice':
                     case 'Set':
+                    case 'Note':
                     case 'Branch':
                     case 'Base':
                     case 'Multi':
@@ -851,6 +882,7 @@ var csde = (function csdeMaster(){
                 'Choice': {name: 'Choice'},
                 'Set': {name: 'Set flag'},
                 'Branch': {name: 'Conditional branch'},
+                'Note': {name: 'Note'},
                 'Base': {name: 'DEBUG - base'},
                 'Multi': {name: 'DEBUG - multi'},
                 'data': {

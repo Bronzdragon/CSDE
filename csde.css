@@ -64,7 +64,7 @@ html, body {
  * Generic node styles *
  ***********************/
 
-.joint-type-dialogue-set rect, .joint-type-dialogue-branch rect {
+.joint-type-dialogue-set rect, .joint-type-dialogue-branch rect, .joint-type-dialogue-note rect {
 	/* Choice and text are set elsewhere */
    fill: #101219;
    stroke: 'none';
@@ -316,6 +316,16 @@ span.plus {
 .node.set button.delete{
 	align-self: flex-end;
 	margin-right: 24px;
+}
+
+/*****************
+* Note Node style:
+******************/
+.node.note {
+	box-sizing: border-box;
+}
+.node.note textarea {
+	width: 100%;
 }
 
 /*******************

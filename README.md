@@ -35,7 +35,6 @@ Currently, no tests are set up. Sorry.
 
 ### Planned features still in the development pipeline:
 1. Pick a license.
-5. A Note type node. Two textboxes (one small one big) that are collapsible. No input/output.
 3. When magnet is connected, give feedback that it is (for example, it changes colour).
 4. Conditional branch should auto-complete variables.
 7. Multiple pages/tabs.

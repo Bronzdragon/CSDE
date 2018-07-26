@@ -151,7 +151,24 @@ var csde = (function csdeMaster(){
 
         updateBox: function() {
             let bbox = this.model.getBBox();
-            this.$box.css({ width: bbox.width, height: bbox.height, left: bbox.x, top: bbox.y, transform: `rotate(${this.model.get('angle') || 0}deg)` });
+            this.$box.css({
+                width: bbox.width, height: bbox.height,
+                left: bbox.x, top: bbox.y,
+                transform: `rotate(${this.model.get('angle') || 0}deg)`
+            });
+
+            for (let port of this.model.getPorts()) {
+                /*jshint loopfunc: true */
+                let hasLinks =_graph.getConnectedLinks(this.model).some(link => {
+                    return link.get('source').port === port.id || link.get('target').port === port.id;
+                });
+
+                if (hasLinks){
+                    $(`[port='${port.id}']`).addClass("connected-magnet");
+                } else {
+                    $(`[port='${port.id}']`).removeClass("connected-magnet");
+                }
+            }
 
             return this;
         },
@@ -162,7 +179,7 @@ var csde = (function csdeMaster(){
             if (!this.model.get('input')) {
                 this.model.set("input", {
                     group: "input",
-                    markup: "<rect /><use />",
+                    markup: "<rect />",
                     attrs: {
                         rect: {
                             class: "magnet input left",
@@ -177,7 +194,7 @@ var csde = (function csdeMaster(){
             if (!this.model.get('output')) {
                 this.model.set("output", {
                     group: "output",
-                    markup: "<rect /><use />",
+                    markup: "<rect />",
                     attrs: {
                         rect: {
                             class: "magnet output left",
@@ -328,7 +345,7 @@ var csde = (function csdeMaster(){
                 this.model.addPort({
                     id: id,
                     group: "output",
-                    markup: "<rect /><use />",
+                    markup: "<rect />",
                     attrs: {
                         rect: {
                             class: "magnet output right",
@@ -390,7 +407,7 @@ var csde = (function csdeMaster(){
             if (!this.model.get('input')) {
                 this.model.set('input', {
                     group: "input",
-                    markup: "<rect /><use />",
+                    markup: "<rect />",
                     attrs: {
                         rect: {
                             class: "magnet input left",
@@ -803,6 +820,9 @@ var csde = (function csdeMaster(){
     	if (magnetSource == magnetTarget || cellViewSource == cellViewTarget)
     		return false;
 
+        if (!magnetTarget) {
+            return false;
+        }
         // Prevent inputs/outputs from linking to themselves
         let targetType = magnetTarget.getAttribute("class").includes("output") ? "output" : "input";
         if (magnetSource.getAttribute('port-group') === targetType)
@@ -1035,7 +1055,10 @@ var csde = (function csdeMaster(){
             defaultLink: _defaultLink,
             validateConnection: _validateConnection,
             validateMagnet: _validateMagnet,
-            snapLinks: { radius: 75 },
+            snapLinks: { radius: 100 }, // How many pixels away should a link 'snap'?
+            restrictTranslate: true, // Stops elements from being dragged offscreen.
+            // perpendicularLinks: true, // Seems to do very little
+            // markAvailable: true
         });
 
         _paper.on('link:pointerup', (cellView, evt, x, y) => {
@@ -1058,6 +1081,29 @@ var csde = (function csdeMaster(){
             for (let link of _graph.getLinks()) {
                 _paper.findViewByModel(link).update();
                 _paper.fitToContent({padding: 4000});
+            }
+        });
+
+        _graph.on('change:source change:target', function(link) {
+            if (link._previousAttributes.target.id) { // Update previous Element
+                _paper.findViewByModel(_graph.getCell(link._previousAttributes.target.id)).updateBox();
+            }
+            if (link.get('target').id) { // Update new Element
+                _paper.findViewByModel(_graph.getCell(link.get('target').id)).updateBox();
+            }
+
+            if (link._previousAttributes.source.id) { // Update previous Element
+                _paper.findViewByModel(_graph.getCell(link._previousAttributes.source.id)).updateBox();
+            }
+            if (link.get('source').id) { // Update new Element
+                _paper.findViewByModel(_graph.getCell(link.get('source').id)).updateBox();
+            }
+        });
+
+        _graph.on('remove', function(cell, collection, opt) {
+            if (cell.isLink()) {
+                _paper.findViewByModel(_graph.getCell(cell.get('source').id)).updateBox();
+                _paper.findViewByModel(_graph.getCell(cell.get('target').id)).updateBox();
             }
         });
 

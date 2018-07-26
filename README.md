@@ -34,14 +34,10 @@ Currently, no tests are set up. Sorry.
 ## Roadmap
 
 ### Planned features still in the development pipeline:
-1. Pick a license.
-2. When automatically creating a text node, try to set the actor to the previous conversation participant (if there is one).
-3. When magnet is connected, give feedback that it is (for example, it changes colour).
-4. Conditional branch should auto-complete variables.
-5. A Note type node. Two textboxes (one small one big) that are collapsible. No input/output.
-6. Next page on paper edges OR dynamically adjust paper size
-7. Multiple pages/tabs.
-8. Glossary editor.
+1. When magnet is connected, give feedback that it is (for example, it changes colour).
+2. Conditional branch should auto-complete variables.
+3. Multiple pages/tabs.
+4. Glossary editor.
 9. Variable manager.
 10. Character importer.
 11. Prevent overlapping of elements.
@@ -55,7 +51,6 @@ Currently, no tests are set up. Sorry.
     * Duplicate
 ### Features not likely to be implemented soon:
 * Fullscreen mode.
-
 
 ## Built Using
 

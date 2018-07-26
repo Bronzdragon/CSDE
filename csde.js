@@ -820,9 +820,6 @@ var csde = (function csdeMaster(){
     	if (magnetSource == magnetTarget || cellViewSource == cellViewTarget)
     		return false;
 
-        if (!magnetTarget) {
-            return false;
-        }
         // Prevent inputs/outputs from linking to themselves
         let targetType = magnetTarget.getAttribute("class").includes("output") ? "output" : "input";
         if (magnetSource.getAttribute('port-group') === targetType)
@@ -833,7 +830,7 @@ var csde = (function csdeMaster(){
             return true;
 
         // Check for link count. Only allow a connection if there's only one.
-        let portId = magnetTarget.parentElement.getAttribute('port');
+        let portId = magnetTarget.getAttribute('port');
         let targetLinks = _graph.getConnectedLinks(cellViewTarget.model);
         let portHasConnections = targetLinks.some(link => {
             if (linkView.model == link) return false; // Discount the current connection.
@@ -851,7 +848,7 @@ var csde = (function csdeMaster(){
         }
 
         let links = _graph.getConnectedLinks(cellView.model);
-        let portId = magnet.parentElement.getAttribute('port');
+        let portId = magnet.getAttribute('port');
 
         let hasConnection = links.some(
             link => link.get('source').port === portId || link.get('target').port === portId
@@ -1085,25 +1082,23 @@ var csde = (function csdeMaster(){
         });
 
         _graph.on('change:source change:target', function(link) {
-            if (link._previousAttributes.target.id) { // Update previous Element
-                _paper.findViewByModel(_graph.getCell(link._previousAttributes.target.id)).updateBox();
-            }
-            if (link.get('target').id) { // Update new Element
-                _paper.findViewByModel(_graph.getCell(link.get('target').id)).updateBox();
-            }
+            let idList = [link._previousAttributes.target.id, link._previousAttributes.source.id, link.get('target').id, link.get('source').id];
 
-            if (link._previousAttributes.source.id) { // Update previous Element
-                _paper.findViewByModel(_graph.getCell(link._previousAttributes.source.id)).updateBox();
-            }
-            if (link.get('source').id) { // Update new Element
-                _paper.findViewByModel(_graph.getCell(link.get('source').id)).updateBox();
+            for (let id of idList) {
+                if (id) {
+                    _paper.findViewByModel(_graph.getCell(id)).updateBox();
+                }
             }
         });
 
         _graph.on('remove', function(cell, collection, opt) {
             if (cell.isLink()) {
-                _paper.findViewByModel(_graph.getCell(cell.get('source').id)).updateBox();
-                _paper.findViewByModel(_graph.getCell(cell.get('target').id)).updateBox();
+                let idList = [ cell.get('target').id, cell.get('source').id ];
+                for (let id of idList) {
+                    if (id) {
+                        _paper.findViewByModel(_graph.getCell(id)).updateBox();
+                    }
+                }
             }
         });
 

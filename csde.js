@@ -44,6 +44,7 @@ var csde = (function csdeMaster(){
     let _globalLinkValue = null;
     let _$container = null;
     let _graph = null;
+    let _paper = null;
     let autosave = new Autosaver();
     let _characters = resetCharacters();
     let _mouseObj = {
@@ -637,7 +638,7 @@ var csde = (function csdeMaster(){
         '<div class="node set">' +
             '<button class="delete">x</button>' +
             '<input type="text" class="userKey" placeholder="Key" />' +
-            '<input type="text" class="UserValue" placeholder="Value" />' +
+            '<input type="text" class="userValue" placeholder="Value" />' +
         '</div>',
 
         initialize: function() {
@@ -652,43 +653,20 @@ var csde = (function csdeMaster(){
 
             this.$box.$userValue.change(event => {
                 this.model.set('userValue', $(event.target).val());
+                console.log("Setting value!", $(event.target).val());
             });
-
-            this.input = {
-                group: "input",
-                markup :"<rect />",
-                attrs: {
-                    rect: {
-                        class: "magnet input left",
-                        magnet: true,
-                        width: _style.magnet.left.width,
-                        height: _style.node.set.height/2
-                    }
-                }
-            };
-            this.output = {
-                group: "output",
-                markup :"<rect />",
-                attrs: {
-                    rect: {
-                        class: "magnet output left",
-                        magnet: true,
-                        width: _style.magnet.left.width,
-                        height: _style.node.set.height/2
-                    }
-                }
-            };
-            this.model.addPorts([this.input, this.output]);
         },
 
         updateBox: function() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
-            if (!this.$box.$userKey.is(':focus'))
+            if (!this.$box.$userKey.is(':focus')){
                 this.$box.$userKey.val(this.model.get('userKey'));
+            }
 
-            if (!this.$box.$userValue.is(':focus'))
+            if (!this.$box.$userValue.is(':focus')){
                 this.$box.$userValue.val(this.model.get('userValue'));
+            }
         }
     });
 
@@ -776,7 +754,7 @@ var csde = (function csdeMaster(){
             x: 0,
             y: 0
         } } } } },
-        userKey: ''
+        userKey: '',
     });
     joint.shapes.dialogue.BranchView = joint.shapes.dialogue.MultiView.extend({
         template:
@@ -808,7 +786,7 @@ var csde = (function csdeMaster(){
             joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
             //this.model.set('userKey', null);
 
-            this.$box.$userKey = this.$box.$delete.after($(''));
+            this.$box.$userKey = this.$box.find("input.userKey");
 
             this.$box.$userKey.on('input propertychange', event => {
                 this.model.set('userKey', $(event.target).val());
@@ -824,6 +802,9 @@ var csde = (function csdeMaster(){
 
         updateBox: function() {
             joint.shapes.dialogue.MultiView.prototype.updateBox.apply(this, arguments);
+            if (!this.$box.$userKey.is(':focus')){
+                this.$box.$userKey.val(this.model.get('userKey'));
+            }
         },
     });
 
@@ -1054,7 +1035,7 @@ var csde = (function csdeMaster(){
         _$container.$paper = baseElement.find('div#paper');
 
         _graph = new joint.dia.Graph();
-        let _paper = new joint.dia.Paper({
+        _paper = new joint.dia.Paper({
             el: _$container.$paper,
             model: _graph,
             width: width,
@@ -1270,6 +1251,8 @@ var csde = (function csdeMaster(){
                 notify("Data found, loading...", 'low');
                 _graph.clear();
                 _graph.fromJSON(json);
+
+                _paper.fitToContent({ padding: 4000 });
             }
         };
 

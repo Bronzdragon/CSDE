@@ -270,8 +270,6 @@ var csde = (function csdeMaster(){
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
             let values = this.model.get('values');
 
-            console.log(values);
-
             /* Loop over all existing ports, remove all orphans. */
             for (let port of this.model.getPorts()) {
                  /*jshint loopfunc: true */
@@ -303,7 +301,6 @@ var csde = (function csdeMaster(){
                 }
             }
 
-
             this.updateSize();
         },
 
@@ -325,6 +322,11 @@ var csde = (function csdeMaster(){
                 this.model.set('values', values);
             });
 
+            $newChoice.$value.on("contextmenu", event => {
+                event.stopPropagation();
+            });
+
+
 
             if (!choice.isDefault) {
                 $newChoice.$remove = $newChoice.find('button.remove');
@@ -336,6 +338,16 @@ var csde = (function csdeMaster(){
                     //values.delete($newChoice.attr('id'));
                     this.model.set('values', values);
                     this.updateBox();
+                });
+
+                $newChoice.$value.keyup(event => {
+                    if (event.key ==="Enter") {
+                        $newChoice.$value.submit();
+                    }
+                });
+
+                $newChoice.$value.submit(event => {
+                    this.$box.$add.click();
                 });
             }
 

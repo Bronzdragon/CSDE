@@ -461,6 +461,10 @@ var csde = (function csdeMaster(){
                 this.model.set('actor', $(event.target).val());
             });
 
+            this.$box.$speech.on("contextmenu", event => {
+                event.stopPropagation();
+            });
+
             this.$box.$speech.on('input propertychange', event => {
                 this.model.set('speech', $(event.target).val());
             });

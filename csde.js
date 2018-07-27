@@ -697,6 +697,11 @@ var csde = (function csdeMaster(){
 
             this.$box.$note = this.$box.find("textarea");
 
+            this.$box.$note.on("contextmenu", event => {
+                event.stopPropagation();
+            });
+
+
             this.$box.$note.width(_style.node.note.width - this.padding * 2);
             this.$box.$note.css({top: this.padding, left: this.padding, position:'absolute'});
 

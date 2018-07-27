@@ -897,7 +897,6 @@ var csde = (function csdeMaster(){
         let reader = new FileReader();
 
         reader.onloadend = event => {
-
             load(event.target.result);
         };
 
@@ -1096,10 +1095,10 @@ var csde = (function csdeMaster(){
 
         /* Might cause performance issues on large graphs. Will have to investigate */
         _graph.on('change:position add', function(cell) {
-            for (let link of _graph.getLinks()) {
-                _paper.findViewByModel(link).update();
-                _paper.fitToContent({padding: 4000});
-            }
+            // for (let link of _graph.getLinks()) {
+            //     _paper.findViewByModel(link).update();
+            // }
+            _paper.fitToContent({padding: 4000});
         });
 
         _graph.on('change:source change:target', function(link) {

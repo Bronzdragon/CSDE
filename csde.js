@@ -461,6 +461,10 @@ var csde = (function csdeMaster(){
                 this.model.set('actor', $(event.target).val());
             });
 
+            this.$box.$speech.on("contextmenu", event => {
+                event.stopPropagation();
+            });
+
             this.$box.$speech.on('input propertychange', event => {
                 this.model.set('speech', $(event.target).val());
             });
@@ -692,6 +696,11 @@ var csde = (function csdeMaster(){
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
 
             this.$box.$note = this.$box.find("textarea");
+
+            this.$box.$note.on("contextmenu", event => {
+                event.stopPropagation();
+            });
+
 
             this.$box.$note.width(_style.node.note.width - this.padding * 2);
             this.$box.$note.css({top: this.padding, left: this.padding, position:'absolute'});

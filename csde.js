@@ -3,7 +3,6 @@ let _userAgent = navigator.userAgent.toLowerCase();
 let _isElectron = _userAgent.indexOf(' electron/') > -1;
 
 if (_isElectron) {
-    console.log("Including requirements!");
     var fs = require('fs');
     var os = require('os');
     var path = require('path');
@@ -565,7 +564,8 @@ var csde = (function csdeMaster(){
                     'alt': selectedChar.name
                 });
             });
-            if (selectedChar.colour) {
+
+            _getCharacterColour(selectedChar).then(result =>{
                 this.model.attr({
                     rect: {
                         fill: {
@@ -573,14 +573,14 @@ var csde = (function csdeMaster(){
                            stops: [
                                { offset: '0%', color: '#abbaab' },
                                { offset: '24%', color: '#ffffff' },
-                               { offset: '24.01%', color: `hsl(${selectedChar.colour.hue}, ${selectedChar.colour.saturation}%, ${selectedChar.colour.lightness}%)` },
-                               { offset: '95%', color: `hsl(${selectedChar.colour.hue}, ${selectedChar.colour.saturation}%, 75%)` },
-                               { offset: '100%', color: `hsl(${selectedChar.colour.hue}, ${selectedChar.colour.saturation}%, 80%)` }
+                               { offset: '24.01%', color: `hsl(${result.hue}, ${result.saturation}%, ${result.lightness}%)` },
+                               { offset: '95%', color: `hsl(${result.hue}, ${result.saturation}%, 75%)` },
+                               { offset: '100%', color: `hsl(${result.hue}, ${result.saturation}%, 80%)` }
                            ]
                         }
                     }
                 });
-            }
+            });
 
             this.$box.$character_select.val(selectedChar.name);
             this.$box.$speech.val(this.model.get('speech'));
@@ -616,7 +616,6 @@ var csde = (function csdeMaster(){
 
             this.$box.$userValue.change(event => {
                 this.model.set('userValue', $(event.target).val());
-                console.log("Setting value!", $(event.target).val());
             });
         },
 
@@ -801,29 +800,32 @@ var csde = (function csdeMaster(){
         });
     }
 
-    function _generateCharacterColour(character){
-        console.log("Generating colour.");
+    function _getCharacterColour(character){
+        if (!character.promise) { // On cache miss.
+            character.promise = new Promise((resolve, reject) => {
+                const DEFAULTCOLOUR = {hue: 0, saturation: 0, lightness: 70};
+                const imageURL = `.\\images\\characters\\${character.url}`;
+                _testImage(imageURL).catch(error => {
+                    resolve(DEFAULTCOLOUR);
+                }).then(() => {
+                    Vibrant.from(imageURL).getPalette().then(palette => {
+                        let colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
+                        let hsl;
 
-        const DEFAULTCOLOUR = {hue: 0, saturation: 0, lightness: 70};
-        const imageURL = `.\\images\\characters\\${character.url}`;
-
-        _testImage(imageURL).catch(error => {
-            character.colour = DEFAULTCOLOUR;
-        }).then(() => {
-            Vibrant.from(imageURL).getPalette().then(palette => {
-                let colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
-                let hsl;
-
-                if (!colour) { // Default colour in case we messed up.
-                    character.colour = DEFAULTCOLOUR;
-                } else {
-                    let hsl = {hue: colour.getHsl()[0] * 360, saturation: colour.getHsl()[1] * 100, lightness: colour.getHsl()[2] * 100};
-                    hsl.saturation = hsl.saturation * 0.80;
-                    hsl.lightness = hsl.lightness * 0.60 + 30;
-                    character.colour = hsl;
-                }
+                        if (!colour) { // Default colour in case we messed up.
+                            hsl = DEFAULTCOLOUR;
+                        } else {
+                            hsl = {hue: colour.getHsl()[0] * 360, saturation: colour.getHsl()[1] * 100, lightness: colour.getHsl()[2] * 100};
+                            hsl.saturation = hsl.saturation * 0.80;
+                            hsl.lightness = hsl.lightness * 0.60 + 30;
+                        }
+                        resolve(hsl);
+                    });
+                });
             });
-        });
+        }
+
+        return character.promise;
     }
 
     function _validateConnection(cellViewSource, magnetSource, cellViewTarget, magnetTarget, end, linkView) {
@@ -1017,15 +1019,8 @@ var csde = (function csdeMaster(){
 
     function _registerHotkeys(element) {
         $(window).keypress(event => {
-            if(event.ctrlKey && event.key === 'o'){
-                // TODO: Tie this to import.
-            }
             if(event.ctrlKey && event.key === 's'){
-                //console.log("Gotta save!");
                 save();
-                /*if (!_saveObject.fileName) {
-                    //_saveObject.fileName = prompt("What would you like your file to be called?", "default.json");
-                }*/
 
                 event.preventDefault();
             }
@@ -1044,11 +1039,6 @@ var csde = (function csdeMaster(){
         if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
         _$container = baseElement;
         _$container.$paper = baseElement.find('div#paper');
-
-        // Generate colours for characters.
-        for (let character of _characters) {
-            _generateCharacterColour(character);
-        }
 
         _graph = new joint.dia.Graph();
         _paper = new joint.dia.Paper({

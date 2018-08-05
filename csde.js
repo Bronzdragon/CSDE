@@ -53,11 +53,8 @@ var csde = (function csdeMaster(){
     };
 
     const _defaultLink = new joint.dia.Link({
-        router: { name: 'metro' },
-        //connector: { name: 'rounded' },
-    }).connector('jumpover', {
-        size: 10,
-        jump: 'gap'
+        router:    { name: 'metro' },
+        connector: { name: 'normal' },
     });
 
     const _gridSize = 10;
@@ -559,16 +556,6 @@ var csde = (function csdeMaster(){
             let imageURL = `.\\images\\characters\\${selectedChar.url}`;
 
             let setColour = colour => {
-
-                let hsl;
-                if (!colour) { // Default colour in case we messed up.
-                    hsl = {hue: 0, saturation: 0, lightness: 70};
-                } else {
-                    hsl = {hue: colour.getHsl()[0] * 360, saturation: colour.getHsl()[1] * 100, lightness: colour.getHsl()[2] * 100};
-                    hsl.saturation = hsl.saturation * 0.80;
-                    hsl.lightness = hsl.lightness * 0.60 + 30;
-                }
-
                 this.model.attr({
                     rect: {
                         fill: {
@@ -576,9 +563,9 @@ var csde = (function csdeMaster(){
                            stops: [
                                { offset: '0%', color: '#abbaab' },
                                { offset: '24%', color: '#ffffff' },
-                               { offset: '24.01%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${hsl.lightness}%)` },
-                               { offset: '95%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, 75%)` },
-                               { offset: '100%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, 80%)` }
+                               { offset: '24.01%', color: `hsl(${colour.hue}, ${colour.saturation}%, ${colour.lightness}%)` },
+                               { offset: '95%', color: `hsl(${colour.hue}, ${colour.saturation}%, 75%)` },
+                               { offset: '100%', color: `hsl(${colour.hue}, ${colour.saturation}%, 80%)` }
                            ]
                         }
                     }
@@ -597,14 +584,23 @@ var csde = (function csdeMaster(){
 
                 if (!selectedChar.colour) {
                     Vibrant.from(imageURL).getPalette().then(palette => {
-                        selectedChar.colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
+                        let colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
+                        let hsl;
+
+                        if (!colour) { // Default colour in case we messed up.
+                            hsl = {hue: 0, saturation: 0, lightness: 70};
+                        } else {
+                            hsl = {hue: colour.getHsl()[0] * 360, saturation: colour.getHsl()[1] * 100, lightness: colour.getHsl()[2] * 100};
+                            hsl.saturation = hsl.saturation * 0.80;
+                            hsl.lightness = hsl.lightness * 0.60 + 30;
+                        }
+
+                        selectedChar.colour = hsl;
                         setColour(selectedChar.colour);
                     });
-                    console.log("No colour found, generating...");
                 }
                 else {
                     setColour(selectedChar.colour);
-                    console.log("Colour found, retrieving cache.");
                 }
 
             });
@@ -1292,6 +1288,15 @@ var csde = (function csdeMaster(){
         }
     }
 
+    function reduceRouterComplexity() {
+        let cells = _graph.getCells();
+        for (let cell of cells) {
+            if (cell.isLink()) {
+                cell.connector('normal');
+            }
+        }
+    }
+
     return {
         addCharacter: character => _characters = addCharacter(character, _characters),
         addCharacters: characters => _characters = addCharacters(characters, _characters),
@@ -1300,6 +1305,7 @@ var csde = (function csdeMaster(){
         load: load,
         notify: notify,
         autosave: autosave,
+        reduceRouterComplexity: reduceRouterComplexity,
         start: initialize
     };
 })();

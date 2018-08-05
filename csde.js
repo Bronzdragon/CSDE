@@ -554,16 +554,16 @@ var csde = (function csdeMaster(){
 
             let imageURL = `.\\images\\characters\\${selectedChar.url}`;
 
-            _testImage(imageURL).catch(error => {
+            /*_testImage(imageURL).catch(error => {
                 console.error('This character does not have a valid image.\nCharacter name: "' + selectedChar.name + '", Location: "' + imageURL + '"');
                 imageURL = ".\\images\\characters\\" + _characters.find(element => element.name === "unknown").url;
-            }).then(() => {
+            }).then(result => {/*/
                 this.$box.$img.attr({
                     'src': imageURL,
                     'title': selectedChar.name,
                     'alt': selectedChar.name
                 });
-            });
+            //});
 
             _getCharacterColour(selectedChar).then(result =>{
                 this.model.attr({
@@ -784,7 +784,7 @@ var csde = (function csdeMaster(){
             var timer, img = new Image();
             img.onerror = img.onabort = function () {
                 clearTimeout(timer);
-                reject("Not a valid image");
+                reject(error("Not a valid image"));
             };
             img.onload = function () {
                 clearTimeout(timer);
@@ -794,7 +794,7 @@ var csde = (function csdeMaster(){
                 // reset .src to invalid URL so it stops previous
                 // loading, but doesn't trigger new load
                 img.src = "//!!!!/test.jpg";
-                reject("Timeout occured");
+                reject(error("Timeout occured."));
             }, timeout);
             img.src = url;
         });
@@ -805,9 +805,7 @@ var csde = (function csdeMaster(){
             character.promise = new Promise((resolve, reject) => {
                 const DEFAULTCOLOUR = {hue: 0, saturation: 0, lightness: 70};
                 const imageURL = `.\\images\\characters\\${character.url}`;
-                _testImage(imageURL).catch(error => {
-                    resolve(DEFAULTCOLOUR);
-                }).then(() => {
+                _testImage(imageURL).then(result => {
                     Vibrant.from(imageURL).getPalette().then(palette => {
                         let colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
                         let hsl;
@@ -821,6 +819,9 @@ var csde = (function csdeMaster(){
                         }
                         resolve(hsl);
                     });
+                }).catch(error => {
+                    console.error(`Couldn't generate colour for ${character.name}\n\terror: ${error}\n\n\tUsing Default colour instead.` );
+                    resolve(DEFAULTCOLOUR);
                 });
             });
         }

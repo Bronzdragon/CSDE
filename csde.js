@@ -557,6 +557,34 @@ var csde = (function csdeMaster(){
             if (!selectedChar) { selectedChar = _characters.find(element => element.name === "unknown"); }
 
             let imageURL = `.\\images\\characters\\${selectedChar.url}`;
+
+            let setColour = colour => {
+
+                let hsl;
+                if (!colour) { // Default colour in case we messed up.
+                    hsl = {hue: 0, saturation: 0, lightness: 70};
+                } else {
+                    hsl = {hue: colour.getHsl()[0] * 360, saturation: colour.getHsl()[1] * 100, lightness: colour.getHsl()[2] * 100};
+                    hsl.saturation = hsl.saturation * 0.80;
+                    hsl.lightness = hsl.lightness * 0.60 + 30;
+                }
+
+                this.model.attr({
+                    rect: {
+                        fill: {
+                           type: 'linearGradient',
+                           stops: [
+                               { offset: '0%', color: '#abbaab' },
+                               { offset: '24%', color: '#ffffff' },
+                               { offset: '24.01%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${hsl.lightness}%)` },
+                               { offset: '95%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, 75%)` },
+                               { offset: '100%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, 80%)` }
+                           ]
+                        }
+                    }
+                });
+            };
+
             this._testImage(imageURL).catch(error => {
                 console.error('This character does not have a valid image.\nCharacter name: "' + selectedChar.name + '", Location: "' + imageURL + '"');
                 imageURL = ".\\images\\characters\\" + _characters.find(element => element.name === "unknown").url;
@@ -567,36 +595,20 @@ var csde = (function csdeMaster(){
                     'alt': selectedChar.name
                 });
 
-                Vibrant.from(imageURL).getPalette().then(palette => {
-                    let dominantColour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
-                    let hsl = null, hex = null;
-                    if (!dominantColour) {
-                        // console.error("Cannot find colour. Using default");
-                        hsl = {hue: 0, saturation: 0, lightness: 70};
-                    } else {
-                        hsl = {hue: dominantColour.getHsl()[0] * 360, saturation: dominantColour.getHsl()[1] * 100, lightness: dominantColour.getHsl()[2] * 100};
-                        // hsl.saturation = (100 - hsl.saturation) / 2 + hsl.saturation;
-                        hsl.saturation = hsl.saturation * 0.80;
-                        hsl.lightness = hsl.lightness * 0.60 + 30;
-                        // hsl.lightness = Math.min(hsl.lightness / 1.2, 80);
-                    }
-
-                    this.model.attr({
-                        rect: {
-                            fill: {
-                                type: 'linearGradient',
-                                stops: [
-                                    { offset: '0%', color: '#abbaab' },
-                                    { offset: '24%', color: '#ffffff' },
-                                    { offset: '24.01%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, ${hsl.lightness}%)` },
-                                    { offset: '95%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, 75%)` },
-                                    { offset: '100%', color: `hsl(${hsl.hue}, ${hsl.saturation}%, 80%)` }
-                                ]
-                            }
-                        }
+                if (!selectedChar.colour) {
+                    Vibrant.from(imageURL).getPalette().then(palette => {
+                        selectedChar.colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
+                        setColour(selectedChar.colour);
                     });
-                });
+                    console.log("No colour found, generating...");
+                }
+                else {
+                    setColour(selectedChar.colour);
+                    console.log("Colour found, retrieving cache.");
+                }
+
             });
+
 
             this.$box.$character_select.val(selectedChar.name);
             this.$box.$speech.val(this.model.get('speech'));

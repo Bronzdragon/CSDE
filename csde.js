@@ -555,24 +555,7 @@ var csde = (function csdeMaster(){
 
             let imageURL = `.\\images\\characters\\${selectedChar.url}`;
 
-            let setColour = colour => {
-                this.model.attr({
-                    rect: {
-                        fill: {
-                           type: 'linearGradient',
-                           stops: [
-                               { offset: '0%', color: '#abbaab' },
-                               { offset: '24%', color: '#ffffff' },
-                               { offset: '24.01%', color: `hsl(${colour.hue}, ${colour.saturation}%, ${colour.lightness}%)` },
-                               { offset: '95%', color: `hsl(${colour.hue}, ${colour.saturation}%, 75%)` },
-                               { offset: '100%', color: `hsl(${colour.hue}, ${colour.saturation}%, 80%)` }
-                           ]
-                        }
-                    }
-                });
-            };
-
-            this._testImage(imageURL).catch(error => {
+            _testImage(imageURL).catch(error => {
                 console.error('This character does not have a valid image.\nCharacter name: "' + selectedChar.name + '", Location: "' + imageURL + '"');
                 imageURL = ".\\images\\characters\\" + _characters.find(element => element.name === "unknown").url;
             }).then(() => {
@@ -581,56 +564,28 @@ var csde = (function csdeMaster(){
                     'title': selectedChar.name,
                     'alt': selectedChar.name
                 });
-
-                if (!selectedChar.colour) {
-                    Vibrant.from(imageURL).getPalette().then(palette => {
-                        let colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
-                        let hsl;
-
-                        if (!colour) { // Default colour in case we messed up.
-                            hsl = {hue: 0, saturation: 0, lightness: 70};
-                        } else {
-                            hsl = {hue: colour.getHsl()[0] * 360, saturation: colour.getHsl()[1] * 100, lightness: colour.getHsl()[2] * 100};
-                            hsl.saturation = hsl.saturation * 0.80;
-                            hsl.lightness = hsl.lightness * 0.60 + 30;
-                        }
-
-                        selectedChar.colour = hsl;
-                        setColour(selectedChar.colour);
-                    });
-                }
-                else {
-                    setColour(selectedChar.colour);
-                }
-
             });
-
+            if (selectedChar.colour) {
+                this.model.attr({
+                    rect: {
+                        fill: {
+                           type: 'linearGradient',
+                           stops: [
+                               { offset: '0%', color: '#abbaab' },
+                               { offset: '24%', color: '#ffffff' },
+                               { offset: '24.01%', color: `hsl(${selectedChar.colour.hue}, ${selectedChar.colour.saturation}%, ${selectedChar.colour.lightness}%)` },
+                               { offset: '95%', color: `hsl(${selectedChar.colour.hue}, ${selectedChar.colour.saturation}%, 75%)` },
+                               { offset: '100%', color: `hsl(${selectedChar.colour.hue}, ${selectedChar.colour.saturation}%, 80%)` }
+                           ]
+                        }
+                    }
+                });
+            }
 
             this.$box.$character_select.val(selectedChar.name);
             this.$box.$speech.val(this.model.get('speech'));
         },
 
-        _testImage: function(url, timeoutT) {
-            return new Promise(function (resolve, reject) {
-                var timeout = timeoutT || 5000;
-                var timer, img = new Image();
-                img.onerror = img.onabort = function () {
-                    clearTimeout(timer);
-                    reject("Not a valid image");
-                };
-                img.onload = function () {
-                    clearTimeout(timer);
-                    resolve("Success");
-                };
-                timer = setTimeout(function () {
-                    // reset .src to invalid URL so it stops previous
-                    // loading, but doesn't trigger new load
-                    img.src = "//!!!!/test.jpg";
-                    reject("Timeout occured");
-                }, timeout);
-                img.src = url;
-            });
-        }
     });
 
     joint.shapes.dialogue.Base.define('dialogue.Set', {
@@ -825,6 +780,52 @@ var csde = (function csdeMaster(){
         return prefix + seed.slice(0, length);
     }
 
+    function _testImage(url, timeout = 5000) {
+        return new Promise(function (resolve, reject) {
+            var timer, img = new Image();
+            img.onerror = img.onabort = function () {
+                clearTimeout(timer);
+                reject("Not a valid image");
+            };
+            img.onload = function () {
+                clearTimeout(timer);
+                resolve("Success");
+            };
+            timer = setTimeout(function () {
+                // reset .src to invalid URL so it stops previous
+                // loading, but doesn't trigger new load
+                img.src = "//!!!!/test.jpg";
+                reject("Timeout occured");
+            }, timeout);
+            img.src = url;
+        });
+    }
+
+    function _generateCharacterColour(character){
+        console.log("Generating colour.");
+
+        const DEFAULTCOLOUR = {hue: 0, saturation: 0, lightness: 70};
+        const imageURL = `.\\images\\characters\\${character.url}`;
+
+        _testImage(imageURL).catch(error => {
+            character.colour = DEFAULTCOLOUR;
+        }).then(() => {
+            Vibrant.from(imageURL).getPalette().then(palette => {
+                let colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
+                let hsl;
+
+                if (!colour) { // Default colour in case we messed up.
+                    character.colour = DEFAULTCOLOUR;
+                } else {
+                    let hsl = {hue: colour.getHsl()[0] * 360, saturation: colour.getHsl()[1] * 100, lightness: colour.getHsl()[2] * 100};
+                    hsl.saturation = hsl.saturation * 0.80;
+                    hsl.lightness = hsl.lightness * 0.60 + 30;
+                    character.colour = hsl;
+                }
+            });
+        });
+    }
+
     function _validateConnection(cellViewSource, magnetSource, cellViewTarget, magnetTarget, end, linkView) {
     	// Prevent linking to itself.
     	if (magnetSource == magnetTarget || cellViewSource == cellViewTarget)
@@ -893,6 +894,7 @@ var csde = (function csdeMaster(){
     }
 
     function _addContextMenus(element) {
+        // Right click menu.
         $.contextMenu({
             selector: 'div#paper',
             callback: function (itemKey, opt, rootMenu, originalEvent) {
@@ -966,6 +968,7 @@ var csde = (function csdeMaster(){
             }
         });
 
+        // Connector dragg-off menu.
         $.contextMenu({
             selector: 'div#drop-menu',
             callback: function (itemKey, opt, rootMenu, originalEvent) {
@@ -1041,6 +1044,11 @@ var csde = (function csdeMaster(){
         if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
         _$container = baseElement;
         _$container.$paper = baseElement.find('div#paper');
+
+        // Generate colours for characters.
+        for (let character of _characters) {
+            _generateCharacterColour(character);
+        }
 
         _graph = new joint.dia.Graph();
         _paper = new joint.dia.Paper({

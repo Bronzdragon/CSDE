@@ -782,19 +782,20 @@ var csde = (function csdeMaster(){
     function _testImage(url, timeout = 5000) {
         return new Promise(function (resolve, reject) {
             var timer, img = new Image();
+            img.crossOrigin = "Anonymous"; // Fix for Chrome, allows images from different sources.
             img.onerror = img.onabort = function () {
                 clearTimeout(timer);
                 reject(error("Not a valid image"));
             };
             img.onload = function () {
                 clearTimeout(timer);
-                resolve("Success");
+                resolve("imageIsValid");
             };
             timer = setTimeout(function () {
                 // reset .src to invalid URL so it stops previous
                 // loading, but doesn't trigger new load
                 img.src = "//!!!!/test.jpg";
-                reject(error("Timeout occured."));
+                reject(error("Image timed out."));
             }, timeout);
             img.src = url;
         });
@@ -805,25 +806,28 @@ var csde = (function csdeMaster(){
             character.promise = new Promise((resolve, reject) => {
                 const DEFAULTCOLOUR = {hue: 0, saturation: 0, lightness: 70};
                 const imageURL = `.\\images\\characters\\${character.url}`;
-                _testImage(imageURL).then(result => {
-                    Vibrant.from(imageURL).getPalette().then(palette => {
-                        let colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
-                        let hsl;
 
-                        if (!colour) { // Default colour in case we messed up.
-                            hsl = DEFAULTCOLOUR;
-                        } else {
-                            hsl = {hue: colour.getHsl()[0] * 360, saturation: colour.getHsl()[1] * 100, lightness: colour.getHsl()[2] * 100};
-                            hsl.saturation = hsl.saturation * 0.80;
-                            hsl.lightness = hsl.lightness * 0.60 + 30;
-                        }
-                        resolve(hsl);
-                    });
+                _testImage(imageURL).then(result => {
+                    return Vibrant.from(imageURL).getPalette();
+                }).then(palette => {
+                    let colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
+                    let hsl;
+
+                    if (!colour) { // Default colour in case we messed up.
+                        hsl = DEFAULTCOLOUR;
+                    } else {
+                        hsl = {hue: colour.getHsl()[0] * 360, saturation: colour.getHsl()[1] * 100, lightness: colour.getHsl()[2] * 100};
+                        hsl.saturation = hsl.saturation * 0.80;
+                        hsl.lightness = hsl.lightness * 0.60 + 30;
+                    }
+
+                    resolve(hsl);
                 }).catch(error => {
                     console.error(`Couldn't generate colour for ${character.name}\n\terror: ${error}\n\n\tUsing Default colour instead.` );
-                    resolve(DEFAULTCOLOUR);
+                    reject(DEFAULTCOLOUR);
                 });
-            });
+
+            }).catch(() => character.promise = null); // If the promise fails, reset it.
         }
 
         return character.promise;

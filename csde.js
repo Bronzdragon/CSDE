@@ -78,6 +78,7 @@ var csde = (function csdeMaster(){
         }
     };
 
+    let _highlightedLinks = [];
 
     // Register new models and views
     joint.shapes.dialogue = {};
@@ -122,6 +123,8 @@ var csde = (function csdeMaster(){
             this.addMagnets();
 
             this.$box = $(_.template(this.template)());
+
+            this.$box.click(() => this.highlightLinks());
             this.$box.$delete = this.$box.find('button.delete');
 
             this.$box.$delete.click(() => this.model.remove());
@@ -205,6 +208,21 @@ var csde = (function csdeMaster(){
                     }
                 });
                 this.model.addPort(this.model.get('output'));
+            }
+        },
+
+        highlightLinks: function() {
+            console.log("Unhighlighting links!");
+            for (let link of _highlightedLinks) {
+                $(link.findView(_paper).$el).removeClass("link-highlight");
+            }
+            _highlightedLinks = [];
+            console.log("Highlighting links!");
+            // console.log("Model: ", this.model);
+            _highlightedLinks = _graph.getConnectedLinks(this.model);
+            console.log("Links: ", _highlightedLinks);
+            for (let link of _highlightedLinks) {
+                $(link.findView(_paper).$el).addClass("link-highlight");
             }
         }
     });
@@ -1058,6 +1076,67 @@ var csde = (function csdeMaster(){
         return path.join(os.homedir(), ".csde", filename);
     }
 
+    function _createGradients() {
+        let gradients = {
+            input: {
+                left: _paper.defineGradient({
+                    type: 'linearGradient',
+                    stops: [
+                        { offset: '0%', color: '#D33' },
+                        { offset: '85%', color: '#311' },
+                        { offset: '100%', color: "#311", opacity: 0 }
+                    ]
+                }), right: _paper.defineGradient({
+                    type: 'linearGradient',
+                    stops: [
+                        { offset: '0%', color: "#311", opacity: 0 },
+                        { offset: '15%', color: '#311' },
+                        { offset: '1000%', color: '#D33' }
+                    ]
+                })
+            },
+            output: {
+                left: _paper.defineGradient({
+                    type: 'linearGradient',
+                    stops: [
+                        { offset: '0%', color: '#DDD' },
+                        { offset: '85%', color: '#333' },
+                        { offset: '100%', color: "#111", opacity: 0 }
+                    ]
+                }), right: _paper.defineGradient({
+                    type: 'linearGradient',
+                    stops: [
+                        { offset: '0%', color: "#111", opacity: 0 },
+                        { offset: '15%', color: '#333' },
+                        { offset: '100%', color: "#DDD" }
+                    ]
+                })
+            }
+        };
+
+        let main = _characters.find(char => char.main);
+        if (main) {
+            _getCharacterColour(main).then(result =>{
+                gradients.choice = _paper.defineGradient({
+                    type: 'linearGradient',
+                    stops: [
+                        { offset: '0%', color: `hsl(${result.hue}, ${result.saturation}%, ${result.lightness}%)` },
+                        { offset: '1000%', color: `hsl(${result.hue}, ${result.saturation}%, 77%)` },
+                    ]
+                });
+            });
+        } else {
+            gradients.choice = _paper.defineGradient({
+                type: 'linearGradient',
+                stops: [
+                    { offset: '0%', color: "#F82" },
+                    { offset: '100%', color: "#FF8"}
+                ]
+            });
+        }
+        return gradients;
+    }
+
     function initialize(baseElement, {width = 800, height = 600} = {}) {
         if (!(baseElement instanceof jQuery)) { throw new TypeError("The base element must be a jQuery object"); }
         _$container = baseElement;
@@ -1146,64 +1225,7 @@ var csde = (function csdeMaster(){
             _handleFile(file);
         });
 
-        _style.gradient = {
-            input: {
-                left: _paper.defineGradient({
-                   type: 'linearGradient',
-                   stops: [
-                       { offset: '0%', color: '#D33' },
-                       { offset: '85%', color: '#311' },
-                       { offset: '100%', color: "#311", opacity: 0 }
-                   ]
-               }), right: _paper.defineGradient({
-                  type: 'linearGradient',
-                  stops: [
-                      { offset: '0%', color: "#311", opacity: 0 },
-                      { offset: '15%', color: '#311' },
-                      { offset: '1000%', color: '#D33' }
-                  ]
-              })
-           },
-           output: {
-               left: _paper.defineGradient({
-                  type: 'linearGradient',
-                  stops: [
-                      { offset: '0%', color: '#DDD' },
-                      { offset: '85%', color: '#333' },
-                      { offset: '100%', color: "#111", opacity: 0 }
-                  ]
-              }), right: _paper.defineGradient({
-                 type: 'linearGradient',
-                 stops: [
-                     { offset: '0%', color: "#111", opacity: 0 },
-                     { offset: '15%', color: '#333' },
-                     { offset: '100%', color: "#DDD" }
-                 ]
-              })
-          }
-       };
-
-       let main = _characters.find(char => char.main);
-       if (main) {
-           _getCharacterColour(main).then(result =>{
-               //console.log("Found color for main character, it's: ");
-               _style.gradient.choice = _paper.defineGradient({
-                   type: 'linearGradient',
-                   stops: [
-                       { offset: '0%', color: `hsl(${result.hue}, ${result.saturation}%, ${result.lightness}%)` },
-                       { offset: '1000%', color: `hsl(${result.hue}, ${result.saturation}%, 77%)` },
-                   ]
-               });
-           });
-       } else {
-           _style.gradient.choice = _paper.defineGradient({
-               type: 'linearGradient',
-               stops: [
-                   { offset: '0%', color: "#F82" },
-                   { offset: '100%', color: "#FF8"}
-               ]
-           });
-       }
+        _style.gradient = _createGradients();
 
         _addContextMenus(_$container);
 

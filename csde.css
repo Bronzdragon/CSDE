@@ -1,3 +1,7 @@
+.link-highlight path.connection{ /* Style for highlighting the paths corrently connected. */
+	stroke: darkred;
+}
+
 .connected-magnet {
 	stroke: red !important;
 }
@@ -87,6 +91,7 @@ html, body {
     box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
 	border-radius: 0px 10px 10px 0px;
 }
+
 .node button.delete {
 	text-align: center;
 	border-radius: 50%;
@@ -103,6 +108,7 @@ html, body {
 .node select, .node input, .node textarea, .node button {
 	pointer-events: all;/* Enable mouse interaction. */
 }
+
 .node.multi {
 	border-radius: 0px 10px 10px 10px;
 }

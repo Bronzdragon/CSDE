@@ -78,6 +78,7 @@ var csde = (function csdeMaster(){
         }
     };
 
+
     // Register new models and views
     joint.shapes.dialogue = {};
 
@@ -110,10 +111,10 @@ var csde = (function csdeMaster(){
     });
     joint.shapes.dialogue.BaseView = joint.dia.ElementView.extend({
         template:
-        '<div class="node base">' +
-            '<button class="delete">x</button>' +
-            'Test node.' +
-        '</div>',
+            '<div class="node base">' +
+                '<button class="delete">x</button>' +
+                'Test node.' +
+            '</div>',
 
         initialize: function () {
             joint.dia.ElementView.prototype.initialize.apply(this, arguments);
@@ -182,7 +183,8 @@ var csde = (function csdeMaster(){
                             class: "magnet input left",
                             magnet: true,
                             width: _style.magnet.left.width,
-                            height: this.model.get('size').height / 2
+                            height: this.model.get('size').height / 2,
+                            fill: `url(#${_style.gradient.input.left})`
                         }
                     }
                 });
@@ -197,8 +199,9 @@ var csde = (function csdeMaster(){
                             class: "magnet output left",
                             magnet: true,
                             width: _style.magnet.left.width,
-                            height: this.model.get('size').height / 2
-                        },
+                            height: this.model.get('size').height / 2,
+                            fill: `url(#${_style.gradient.output.left})`
+                        }
                     }
                 });
                 this.model.addPort(this.model.get('output'));
@@ -229,28 +232,28 @@ var csde = (function csdeMaster(){
     });
     joint.shapes.dialogue.MultiView = joint.shapes.dialogue.BaseView.extend({
         template:
-        '<div class="node multi">' +
-            `<div class="multi header" style="height: ${_style.node.multi.section}px;">` +
-                '<button class="delete">x</button>' +
-            '</div>' +
-            '<div class="choiceContainer"></div>' +
-            '<div class="footer">' +
-                `<div class="add-row" style="height: ${_style.node.multi.section}px;">` +
-                    '<button class="add"><span class="plus">+</span></button>' +
+            '<div class="node multi">' +
+                `<div class="multi header" style="height: ${_style.node.multi.section}px;">` +
+                    '<button class="delete">x</button>' +
                 '</div>' +
-            '</div>' +
-        '</div>',
+                '<div class="choiceContainer"></div>' +
+                '<div class="footer">' +
+                    `<div class="add-row" style="height: ${_style.node.multi.section}px;">` +
+                        '<button class="add"><span class="plus">+</span></button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>',
 
         defaultTemplate:
-        `<div style="height: ${_style.node.multi.section}px;" id="<%= TemplateId %>">` +
-            '<input type="text" class="value default" value="<%= templateValue %>">' +
-        '</div>',
+            `<div style="height: ${_style.node.multi.section}px;" id="<%= TemplateId %>">` +
+                '<input type="text" class="value default" value="<%= templateValue %>">' +
+            '</div>',
 
         choiceTemplate:
-        `<div style="height: ${_style.node.multi.section}px;" id="<%= TemplateId %>">` +
-            '<button class="remove">-</button>' +
-            '<input type="text" class="value" value="<%= templateValue %>">' +
-        '</div>',
+            `<div style="height: ${_style.node.multi.section}px;" id="<%= TemplateId %>">` +
+                '<button class="remove">-</button>' +
+                '<input type="text" class="value" value="<%= templateValue %>">' +
+            '</div>',
 
         initialize: function() {
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
@@ -360,7 +363,8 @@ var csde = (function csdeMaster(){
                             class: "magnet output right",
                             magnet: true,
                             width: _style.magnet.right.width,
-                            height: _style.node.multi.section
+                            height: _style.node.multi.section,
+                            fill: `url(#${_style.gradient.output.right})`
                         }
                     }
                 });
@@ -422,7 +426,8 @@ var csde = (function csdeMaster(){
                             class: "magnet input left",
                             magnet: true,
                             width: _style.magnet.left.width,
-                            height: _style.magnet.left.height
+                            height: _style.magnet.left.height,
+                            fill: `url(#${_style.gradient.input.left})`
                         }
                     }
                 });
@@ -679,34 +684,47 @@ var csde = (function csdeMaster(){
     });
     joint.shapes.dialogue.ChoiceView = joint.shapes.dialogue.MultiView.extend({
         template:
-        '<div class="node multi choice">' +
-            `<div class="multi header" style="height: ${_style.node.choice.section}px;">` +
-                '<button class="delete">x</button>' +
-            '</div>' +
-            '<div class="choiceContainer"></div>' +
-            '<div class="footer">' +
-                `<div class="add-row" style="height: ${_style.node.choice.section}px;">` +
-                    '<button class="add"><span class="plus">+</span></button>' +
+            '<div class="node multi choice">' +
+                `<div class="multi header" style="height: ${_style.node.choice.section}px;">` +
+                    '<button class="delete">x</button>' +
                 '</div>' +
-            '</div>' +
-        '</div>',
+                '<div class="choiceContainer"></div>' +
+                '<div class="footer">' +
+                    `<div class="add-row" style="height: ${_style.node.choice.section}px;">` +
+                        '<button class="add"><span class="plus">+</span></button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>',
 
         choiceTemplate:
-        `<div style="height: ${_style.node.choice.section}px;" id="<%= TemplateId %>">` +
-            '<button class="remove">-</button>' +
-            '<input type="text" class="value" value="<%= templateValue %>">' +
-        '</div>',
+            `<div style="height: ${_style.node.choice.section}px;" id="<%= TemplateId %>">` +
+                '<button class="remove">-</button>' +
+                '<input type="text" class="value" value="<%= templateValue %>">' +
+            '</div>',
 
         defaultTemplate:
-        `<div style="height: ${_style.node.choice.section}px;" id="<%= TemplateId %>">` +
-            '<input type="text" class="value default" value="<%= templateValue %>">' +
-        '</div>',
+            `<div style="height: ${_style.node.choice.section}px;" id="<%= TemplateId %>">` +
+                '<input type="text" class="value default" value="<%= templateValue %>">' +
+            '</div>',
 
         initialize: function() {
             joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
             if (this.model.get('values').length < 1) {
                 this.addChoice();
             }
+            /*this.model.attr({
+                rect: {
+                    fill: `url(#${_style.gradient.choice})`
+                }
+            });*/
+
+            (function updateColour(outer){
+                if (_style.gradient.hasOwnProperty('choice')) {
+                    outer.model.attr({ rect: { fill: `url(#${_style.gradient.choice})` } });
+                } else {
+                    window.setTimeout((o) => updateColour(o), 50, outer);
+                }
+            })(this);
         }
     });
 
@@ -875,7 +893,7 @@ var csde = (function csdeMaster(){
         return !hasConnection;
     }
 
-    function _checkCharacter(character){
+    function _isValidCharacter(character){
         return character.hasOwnProperty('name') && character.hasOwnProperty('url');
     }
 
@@ -1085,11 +1103,7 @@ var csde = (function csdeMaster(){
             $('div#drop-menu').contextMenu({x: x, y: y});
         });
 
-        /* Might cause performance issues on large graphs. Will have to investigate */
         _graph.on('change:position add', function(cell) {
-            // for (let link of _graph.getLinks()) {
-            //     _paper.findViewByModel(link).update();
-            // }
             _paper.fitToContent({padding: 4000});
         });
 
@@ -1132,54 +1146,64 @@ var csde = (function csdeMaster(){
             _handleFile(file);
         });
 
-        joint.shapes.basic.Generic.define('svg.Gradient', {
-            markup:
-                `<defs>
-                    <linearGradient id="CharacterColour">
-                        <stop offset="0%" stop-color=" #abbaab"/>
-                        <stop offset="24%" stop-color="#ffffff"/>
+        _style.gradient = {
+            input: {
+                left: _paper.defineGradient({
+                   type: 'linearGradient',
+                   stops: [
+                       { offset: '0%', color: '#D33' },
+                       { offset: '85%', color: '#311' },
+                       { offset: '100%', color: "#311", opacity: 0 }
+                   ]
+               }), right: _paper.defineGradient({
+                  type: 'linearGradient',
+                  stops: [
+                      { offset: '0%', color: "#311", opacity: 0 },
+                      { offset: '15%', color: '#311' },
+                      { offset: '1000%', color: '#D33' }
+                  ]
+              })
+           },
+           output: {
+               left: _paper.defineGradient({
+                  type: 'linearGradient',
+                  stops: [
+                      { offset: '0%', color: '#DDD' },
+                      { offset: '85%', color: '#333' },
+                      { offset: '100%', color: "#111", opacity: 0 }
+                  ]
+              }), right: _paper.defineGradient({
+                 type: 'linearGradient',
+                 stops: [
+                     { offset: '0%', color: "#111", opacity: 0 },
+                     { offset: '15%', color: '#333' },
+                     { offset: '100%', color: "#DDD" }
+                 ]
+              })
+          }
+       };
 
-                        <stop offset="24%" stop-color="#F82"/>
-                        <stop offset="95%" stop-color="#FF6"/>
-                        <stop offset="100%" stop-color="#FF8"/>
-                    </linearGradient>
-                    <linearGradient id="ChoiceColour">
-                        <stop offset="0%" stop-color="#F82"/>
-                        <stop offset="100%" stop-color="#FF8"/>
-                    </linearGradient>
-                    <linearGradient id="InputPort">
-                        <stop offset="0%" stop-color="#D33"/>
-                        <stop offset="85%" stop-color="#311"/>
-                        <stop offset="100%" stop-color="rgba(51,17,17,0.0)"/>
-                    </linearGradient>
-                    <linearGradient id="InputPort">
-                        <stop offset="0%" stop-color="#DD3333"/>
-                        <stop offset="85%" stop-color="#331111"/>
-                        <stop offset="100%" stop-color="rgba(51,17,17,0.0)"/>
-                    </linearGradient>
-                    <linearGradient id="OutPort">
-                        <stop offset="0%" stop-color="#DDD"/>
-                        <stop offset="85%" stop-color="#333"/>
-                        <stop offset="100%" stop-color="rgba(17,17,17,0.0)"/>
-                    </linearGradient>
-                    <linearGradient id="OutPortRight">
-                        <stop offset="0%" stop-color="rgba(17,17,17,0.0)"/>
-                        <stop offset="15%" stop-color="#333"/>
-                        <stop offset="100%" stop-color="#DDD"/>
-                    </linearGradient>
-                    <linearGradient id="OutPortRightFull">
-                        <stop offset="0%" stop-color="#abbaab"/>
-                        <stop offset="15%" stop-color="#333"/>
-                        <stop offset="100%" stop-color="#DDD"/>
-                    </linearGradient>
-                    <radialGradient id="OutPortRad" cx="1.25" cy="1.25" r="1.25">
-                        <stop offset="0%" stop-color="#DDD"/>
-                        <stop offset="100%" stop-color="#333"/>
-                    </radialGradient>
-                </defs>`
-        });
-
-        _graph.addCell(new joint.shapes.svg.Gradient());
+       let main = _characters.find(char => char.main);
+       if (main) {
+           _getCharacterColour(main).then(result =>{
+               //console.log("Found color for main character, it's: ");
+               _style.gradient.choice = _paper.defineGradient({
+                   type: 'linearGradient',
+                   stops: [
+                       { offset: '0%', color: `hsl(${result.hue}, ${result.saturation}%, ${result.lightness}%)` },
+                       { offset: '1000%', color: `hsl(${result.hue}, ${result.saturation}%, 77%)` },
+                   ]
+               });
+           });
+       } else {
+           _style.gradient.choice = _paper.defineGradient({
+               type: 'linearGradient',
+               stops: [
+                   { offset: '0%', color: "#F82" },
+                   { offset: '100%', color: "#FF8"}
+               ]
+           });
+       }
 
         _addContextMenus(_$container);
 
@@ -1187,7 +1211,7 @@ var csde = (function csdeMaster(){
 
         _registerHotkeys(_$container);
 
-        /* Load if there is a state */
+        /* Load if there is a state to load from. */
         load();
 
         /* Enable autosave */
@@ -1222,14 +1246,17 @@ var csde = (function csdeMaster(){
     }
 
     function addCharacters(newCharacters, list = resetCharacters()) {
-        if (!Array.isArray(newCharacters) || !newCharacters.every(_checkCharacter)) {
+        if (! Array.isArray(newCharacters) || ! newCharacters.every(_isValidCharacter)) {
             throw new TypeError("The character list must be an array of objects, with each object having a name and url key.");
+        }
+        if (('concat' in list) == false) {
+            throw new TypeError("Try providing an array instead.");
         }
         return list.concat(newCharacters);
     }
 
     function addCharacter(newCharacter, list = resetCharacters()){
-        if (!_checkCharacter(newCharacter)) {
+        if (! _isValidCharacter(newCharacter)) {
             throw new TypeError("The character must be an object with a name and url key.");
         }
         return addCharacters([newCharacter], list);

@@ -712,11 +712,19 @@ var csde = (function csdeMaster(){
             if (this.model.get('values').length < 1) {
                 this.addChoice();
             }
-            this.model.attr({
+            /*this.model.attr({
                 rect: {
                     fill: `url(#${_style.gradient.choice})`
                 }
-            });
+            });*/
+
+            (function updateColour(outer){
+                if (_style.gradient.hasOwnProperty('choice')) {
+                    outer.model.attr({ rect: { fill: `url(#${_style.gradient.choice})` } });
+                } else {
+                    window.setTimeout((o) => updateColour(o), 50, outer);
+                }
+            })(this);
         }
     });
 
@@ -1198,7 +1206,7 @@ var csde = (function csdeMaster(){
 
         _registerHotkeys(_$container);
 
-        /* Load if there is a state */
+        /* Load if there is a state to load from. */
         load();
 
         /* Enable autosave */

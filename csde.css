@@ -68,7 +68,9 @@ html, body {
  * Generic node styles *
  ***********************/
 
-.joint-type-dialogue-set rect, .joint-type-dialogue-branch rect, .joint-type-dialogue-note rect {
+.joint-type-dialogue-set rect:not(.magnet),
+.joint-type-dialogue-branch rect:not(.magnet),
+.joint-type-dialogue-note rect:not(.magnet) {
 	/* Choice and text are set elsewhere */
    fill: #101219;
    stroke: 'none';
@@ -129,13 +131,6 @@ div.node div.choiceContainer, div.node div.header {
 	border-bottom: solid grey 1px;
 }
 
-.joint-type-dialogue-choice .magnet.input {
-}
-
-.joint-type-dialogue-choice .magnet.output.right {
-	fill: url(#OutPortRightFull);
-}
-
 div.node div.header {
 	flex-direction: row;
 	justify-content: flex-end;
@@ -169,12 +164,12 @@ div.node div.choiceContainer input {
 	color: white;
 	background: rgba(0,0,0,0.3);
 	border-top: none;
-  border-bottom: solid 0.5px #d8d8d8;
+	border-bottom: solid 0.5px #d8d8d8;
 	border-right: none;
 	border-left: none;
-  padding: 20px;
-  font-size: 14px;
-  box-shadow: inset 0px 6px 20px #312e2a;
+	padding: 20px;
+	font-size: 14px;
+	box-shadow: inset 0px 6px 20px #312e2a;
 }
 
 div.node div.footer div.add-row {
@@ -212,14 +207,14 @@ span.plus {
  *****************/
 
 .magnet.input {
-	fill: url(#InputPort);
+	fill: auto;
 	stroke: rgba(255,255,255,0.1);
 	stroke-width: -1px;
 	stroke-linecap: round;
 }
 
 .magnet.output {
-	fill: url(#OutPort);
+	fill: auto;
 	stroke: rgba(255,255,255,0.1);
 	stroke-width: -1px;
 	stroke-linecap: round;
@@ -353,7 +348,7 @@ span.plus {
 ********************/
 
 .joint-type-dialogue-choice rect {
-	fill: url(#ChoiceColour);
+	fill: auto; /*url(#ChoiceColour)*/
 }
 
 

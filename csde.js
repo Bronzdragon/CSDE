@@ -212,17 +212,26 @@ var csde = (function csdeMaster(){
         },
 
         highlightLinks: function() {
-            console.log("Unhighlighting links!");
+
+            let highlightClass = {
+                highlighter: {
+                    name: "addClass",
+                    options: { className: "link-highlight" }
+                }
+            };
+
             for (let link of _highlightedLinks) {
-                $(link.findView(_paper).$el).removeClass("link-highlight");
+                let view = link.findView(_paper);
+                if(view){
+                    view.unhighlight(null, highlightClass);
+                }
             }
+
             _highlightedLinks = [];
-            console.log("Highlighting links!");
-            // console.log("Model: ", this.model);
             _highlightedLinks = _graph.getConnectedLinks(this.model);
-            console.log("Links: ", _highlightedLinks);
+
             for (let link of _highlightedLinks) {
-                $(link.findView(_paper).$el).addClass("link-highlight");
+                link.findView(_paper).highlight(null, highlightClass);
             }
         }
     });

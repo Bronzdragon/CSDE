@@ -1,5 +1,6 @@
 .link-highlight path.connection{ /* Style for highlighting the paths corrently connected. */
-	stroke: darkred;
+	stroke: red;
+	stroke-width: 10;
 }
 
 .connected-magnet {

@@ -80,6 +80,13 @@ var csde = (function csdeMaster(){
 
     let _highlightedLinks = [];
 
+    const _linkHighlightClass = {
+        highlighter: {
+            name: "addClass",
+            options: { className: "link-highlight" }
+        }
+    };
+
     // Register new models and views
     joint.shapes.dialogue = {};
 
@@ -124,7 +131,7 @@ var csde = (function csdeMaster(){
 
             this.$box = $(_.template(this.template)());
 
-            this.$box.click(() => this.highlightLinks());
+            this.$box.click(() => this.highlightAllConnectedLinks());
             this.$box.$delete = this.$box.find('button.delete');
 
             this.$box.$delete.click(() => this.model.remove());
@@ -211,28 +218,9 @@ var csde = (function csdeMaster(){
             }
         },
 
-        highlightLinks: function() {
-
-            let highlightClass = {
-                highlighter: {
-                    name: "addClass",
-                    options: { className: "link-highlight" }
-                }
-            };
-
-            for (let link of _highlightedLinks) {
-                let view = link.findView(_paper);
-                if(view){
-                    view.unhighlight(null, highlightClass);
-                }
-            }
-
-            _highlightedLinks = [];
-            _highlightedLinks = _graph.getConnectedLinks(this.model);
-
-            for (let link of _highlightedLinks) {
-                link.findView(_paper).highlight(null, highlightClass);
-            }
+        highlightAllConnectedLinks: function() {
+            _clearAllLinkHighlights(); // Clear all existing highlights first
+            _highlightLinks(_graph.getConnectedLinks(this.model));
         }
     });
 
@@ -397,6 +385,8 @@ var csde = (function csdeMaster(){
                 });
             }
 
+            $newChoice.click((event) => this.highlightChoiceConnectedLinks(event));
+
             return $newChoice;
         },
 
@@ -460,7 +450,30 @@ var csde = (function csdeMaster(){
                 });
                 this.model.addPort(this.model.get('input'));
             }
+        },
+
+        highlightChoiceConnectedLinks: function(event) {
+            let portIds = [ // Port IDs of the relevant outport and inport
+                $(event.currentTarget).prop('id'),
+                (this.model.getPorts()).find(port => port.group = "input").id
+            ];
+
+            // Get all connected links, including those we're not interested in
+            let allLinks = _graph.getConnectedLinks(this.model);
+
+            // Filter out all the links that aren't connected to one of the ports we're interested in.
+            let linksToHighlight = allLinks.filter(
+                link => portIds.some(portId =>
+                    portId == link.get('source').port || portId == link.get('target').port
+                )
+            );
+
+            _clearAllLinkHighlights();
+            _highlightLinks(linksToHighlight);
+
+            event.stopPropagation();
         }
+
     });
 
     joint.shapes.dialogue.Base.define('dialogue.Text', {
@@ -1139,6 +1152,28 @@ var csde = (function csdeMaster(){
             });
         }
         return gradients;
+    }
+
+    function _clearAllLinkHighlights() {
+        for (let link of _highlightedLinks) {
+            let view = link.findView(_paper);
+            if(view) { view.unhighlight(null, _linkHighlightClass); }
+        }
+        _highlightedLinks = [];
+    }
+
+    function _highlightLinks(linksToHighlight) {
+        if (! Array.isArray(linksToHighlight) || ! linksToHighlight.every(link => link.isLink())) {
+            throw new TypeError("Please provide an array of links.");
+        }
+
+        for (let link of linksToHighlight) {
+            let view = link.findView(_paper);
+            if (view) {
+                view.highlight(null, _linkHighlightClass);
+            }
+        }
+        _highlightedLinks = _highlightedLinks.concat(linksToHighlight);
     }
 
     function initialize(baseElement, {width = 800, height = 600} = {}) {

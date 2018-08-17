@@ -955,7 +955,7 @@ var csde = (function csdeMaster(){
             load(event.target.result);
         };
 
-        reader.readAsText(fileBlob); // Get the first file (There should be only one anyway)
+        reader.readAsText(fileBlob);
     }
 
     function _addContextMenus(element) {
@@ -1023,7 +1023,8 @@ var csde = (function csdeMaster(){
                                 $link.remove();
                             }
                         }, 'export-uvnp': {
-                            name: "Export (UVNP format)"
+                            name: "Export (UVNP format)",
+                            callback: _exportUVNP
                         },'new': {
                             name: 'Open blank file',
                             callback: () => _graph.clear()
@@ -1056,6 +1057,104 @@ var csde = (function csdeMaster(){
                 'Branch': {name: 'Conditional branch'}
             }
         });
+    }
+
+    function _exportUVNP() {
+        console.log("Exporting UVNP!");
+        let elements = _graph.getElements();
+
+        let nodes = [];
+
+        let findConnectedElement = (ports, links) => {
+            let filteredPorts = ports.filter(port => port.group === "output");
+            if (filteredPorts.length !== 1) { throw new RangeError("Detected too many (or too few) output ports for this type of node"); }
+            let portid = filteredPorts[0].id;
+            for (let link of links) {
+                if (link.get('source').port === portid) {
+                    return link.get('target').id;
+                } else if (link.get('target').port === portid) {
+                    return link.get('source').id;
+                }
+            }
+        };
+
+        let findConnectedElements = (choices, links) => {
+            let outbound = [];
+            for (let choice of choices) {
+                for (let link of links) {
+                    if (link.get('source').port === choice.id) {
+
+                        outbound.push({
+                            text: choice.value,
+                            id: link.get('target').id
+                        });
+                        break; // There should only be one output link anyway.
+                    } else if (link.get('target').port === choice.id) {
+                        outbound.push({
+                            text: choice.value,
+                            id: link.get('source').id
+                        });
+                        break; // There should only be one output link anyway.
+                    }
+                }
+            }
+            return outbound;
+        };
+
+        for (let element of elements) {
+            let node = {
+                id: element.id,
+                type: element.get("type"),
+                outbound: null
+            };
+
+            console.log("\n\tID: ", node.id);
+            console.log("\tType: ", node.type);
+
+            // let links = ;
+
+            // Collect all the outbound links here.
+            switch (node.type) {
+                case "dialogue.Text":
+                    node.outbound = findConnectedElement(element.getPorts(), _graph.getConnectedLinks(element));
+                    node.actor = element.get("actor");
+                    node.text = element.get("speech");
+                    break;
+                case "dialogue.Set":
+                    node.outbound = findConnectedElement(element.getPorts(), _graph.getConnectedLinks(element));
+                    node.key = element.get("userKey");
+                    node.value = element.get("userValue");
+                    break;
+                case "dialogue.Branch":
+                    node.outbound = findConnectedElements(element.get("values"), _graph.getConnectedLinks(element));
+                    node.key = element.get("userKey");
+                    break;
+                case "dialogue.Choice":
+                    node.outbound = findConnectedElements(element.get("values"), _graph.getConnectedLinks(element));
+                    break;
+                case "dialogue.Note": /* falls through */
+                default:
+                    break;
+            }
+
+            if (node.type !== "dialogue.Note") {
+                nodes.push(node);
+            }
+        }
+
+        console.log(nodes);
+
+        let $link = $("<a>").
+        attr({
+            "download": "export.csde",
+            "href": `data:application/json,${encodeURIComponent(JSON.stringify(nodes))}`,
+            "target": "_blank"
+        })
+        .hide();
+
+        $('body').append($link);
+        $link[0].click();
+        $link.remove();
     }
 
     function _registerPanning(paper, element) {

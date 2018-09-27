@@ -837,6 +837,11 @@ var csde = (function csdeMaster(){
         return prefix + seed.slice(0, length);
     }
 
+    function _pad(baseString, width, padSymbol = '0') {
+      baseString += '';
+      return baseString.length >= width ? baseString : new Array(width - baseString.length + 1).join(padSymbol) + baseString;
+    }
+
     function _testImage(url, timeout = 5000) {
         return new Promise(function (resolve, reject) {
             var timer, img = new Image();
@@ -953,109 +958,88 @@ var csde = (function csdeMaster(){
         reader.readAsText(fileBlob);
     }
 
-    function _addContextMenus(element) {
-        // Right click menu.
-        $.contextMenu({
-            selector: 'div#paper',
-            callback: function (itemKey, opt, rootMenu, originalEvent) {
-
-                let type = null;
-                let pos = {
-                    x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
-                    y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
-                };
-
-                switch (itemKey) { // If we've selected any of the node types, add that node type to the graph.
-                    case 'Text':
-                    case 'Choice':
-                    case 'Set':
-                    case 'Note':
-                    case 'Branch':
-                    case 'Base':
-                    case 'Multi':
-                        _addNodeToGraph(joint.shapes.dialogue[itemKey], pos);
-                        break;
-                    default:
-                        console.log("File management is not yet implemented.");
-                        return;
-                }
-            }, items: {
-                'Text': {name: 'Speech'},
-                'Choice': {name: 'Choice'},
-                'Set': {name: 'Set flag'},
-                'Branch': {name: 'Conditional branch'},
-                'Note': {name: 'Note'},
-                'Base': {name: 'DEBUG - base'},
-                'Multi': {name: 'DEBUG - multi'},
-                'data': {
-                    name: 'Data management',
-                    items: {
-                        'import': {
-                            name: "Import from file",
-                            callback: () => {
-                                let $file = $('<input type="file" accept="application/json,.json" />')
-                                .hide()
-                                .on('change', function () {
-                                    _handleFile(this.files[0]); // We care about only the first file.
-                                    $file.remove();
-                                })
-                                .appendTo("body")
-                                .click();
-                            }
-                        }, 'export-csde': {
-                            name: "Export (CSDE format)",
-                            callback: () => {
-                                let $link = $("<a>").
-                                attr({
-                                    "download": "export.json",
-                                    "href": `data:application/json,${encodeURIComponent(JSON.stringify(_graph.toJSON()))}`,
-                                    "target": "_blank"
-                                })
-                                .hide();
-
-                                $('body').append($link);
-                                $link[0].click();
-                                $link.remove();
-                            }
-                        }, 'export-uvnp': {
-                            name: "Export (UVNP format)",
-                            callback: _exportUVNP
-                        },'new': {
-                            name: 'Open blank file',
-                            callback: () => _graph.clear()
-                        }
-                    }
+    function _findConnectedElements(ports = [], links = []) {
+        let outbound = [];
+        for (let port of ports) {
+            for (let link of links) {
+                if (link.get('source').port === port.id){
+                    outbound.push({
+                        text: port.text,
+                        id: link.get('target').id
+                    });
+                } else if (link.get('target').port === port.id) {
+                    outbound.push({
+                        text: port.text,
+                        id: link.get('source').id
+                    });
                 }
             }
-        });
+        }
 
-        // Connector dragg-off menu.
-        $.contextMenu({
-            selector: 'div#drop-menu',
-            callback: function (itemKey, opt, rootMenu, originalEvent) {
-                let pos = {
-                    x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
-                    y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
-                };
-
-                newElement = new joint.shapes.dialogue[itemKey]({position: pos});
-                _graph.addCell(newElement);
-
-
-                _globalLinkValue.link.target({id: newElement.id, port: newElement.getPorts().find(element => element.group === _globalLinkValue.type).id});
-
-                _globalLinkValue = null;
-            }, items: {
-                'Text': {name: 'Speech'},
-                'Choice': {name: 'Choice'},
-                'Set': {name: 'Set flag'},
-                'Branch': {name: 'Conditional branch'}
-            }
-        });
+        return outbound;
     }
 
-    function _exportUVNP() {
-        console.log("Exporting UVNP!");
+    function _CSDEToGraph(jsonText = "") {
+        let nodes = JSON.parse(jsonText);
+
+        for (let node of nodes) {
+            _addNodeToGraph(node.type, node.location);
+        }
+    }
+
+    function _graphToCSDE() {
+        let elements = _graph.getElements();
+        let nodes = [];
+
+        let nodeIdCounter = 0;
+        for (let element of elements) {
+            nodeIdCounter++;
+            let node = {
+                id: _pad(nodeIdCounter.toString(36), 4),
+                type: element.get("type"),
+                position: element.position,
+                outbound: []
+            };
+
+            let ports = [];
+            switch (node.type) {
+                case "dialogue.Text":
+                    node.actor = element.get("actor") || "unknown";
+                    node.text = element.get("speech") || "";
+                    ports = element.getPorts().filter(port => port.group === "output").map(obj => ({id: obj.id, text: "output"}));
+
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element));
+                    break;
+                case "dialogue.Set":
+                    node.key = element.get("userKey") || "";
+                    node.value = element.get("userValue") || "";
+
+                    ports = element.getPorts().filter(port => port.group === "output").map(obj => ({id: obj.id, text: "output"}));
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element));
+                    break;
+                case "dialogue.Branch":
+                    node.key = element.get("userKey") || "";
+
+                    ports = element.get("values").map(value => ({id: value.id, text:value.value}));
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element));
+                    break;
+                case "dialogue.Choice":
+                    ports = element.get("values").map(value => ({id: value.id, text:value.value}));
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element));
+                    break;
+                case "dialogue.Note": /* falls through */
+                default:
+                    break;
+            }
+            if (["dialogue.Text", "dialogue.Set", "dialogue.Branch", "dialogue.Choice"].includes(node.type)) {
+                nodes.push(node);
+            }
+        }
+
+        return nodes;
+    }
+
+    function _graphToUVPN() {
         let elements = _graph.getElements();
 
         let nodes = [];
@@ -1078,7 +1062,6 @@ var csde = (function csdeMaster(){
             for (let choice of choices) {
                 for (let link of links) {
                     if (link.get('source').port === choice.id) {
-
                         outbound.push({
                             text: choice.value,
                             id: link.get('target').id
@@ -1137,12 +1120,26 @@ var csde = (function csdeMaster(){
             }
         }
 
-        console.log(nodes);
+        return nodes;
+    }
+
+    function _exportCSDE() {
+        notify("Starting export of CSDE file.", "low");
+        _offerAsFile(_graphToCSDE(), "export.csde");
+    }
+
+    function _exportUVNP() {
+        notify("Exporting UVNP file.", "low");
+        _offerAsFile(_graphToUVPN(), "export.uvnp");
+    }
+
+    function _offerAsFile(data, filename = "download.json"){
+        if (!data || $.type(filename) !== "string") return;
 
         let $link = $("<a>").
         attr({
-            "download": "export.csde",
-            "href": `data:application/json,${encodeURIComponent(JSON.stringify(nodes))}`,
+            "download": filename,
+            "href": `data:application/json,${encodeURIComponent(JSON.stringify(data))}`,
             "target": "_blank"
         })
         .hide();
@@ -1150,6 +1147,95 @@ var csde = (function csdeMaster(){
         $('body').append($link);
         $link[0].click();
         $link.remove();
+    }
+
+    function _addContextMenus(element) {
+        // Right click menu.
+        $.contextMenu({
+            selector: 'div#paper',
+            callback: function (itemKey, opt, rootMenu, originalEvent) {
+
+                let type = null;
+                let pos = {
+                    x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
+                    y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
+                };
+
+                switch (itemKey) { // If we've selected any of the node types, add that node type to the graph.
+                    case 'Text':
+                    case 'Choice':
+                    case 'Set':
+                    case 'Note':
+                    case 'Branch':
+                    case 'Base':
+                    case 'Multi':
+                        _addNodeToGraph(joint.shapes.dialogue[itemKey], pos);
+                        break;
+                    default:
+                        notify("This option has not yet been implemented.", "low");
+                        return;
+                }
+            }, items: {
+                'Text':   {name: 'Speech'},
+                'Choice': {name: 'Choice'},
+                'Set':    {name: 'Set flag'},
+                'Branch': {name: 'Conditional branch'},
+                'Note':   {name: 'Note'},
+                'Base':   {name: 'DEBUG - base'},
+                'Multi':  {name: 'DEBUG - multi'},
+                'data': {
+                    name: 'Data management',
+                    items: {
+                        'import': {
+                            name: "Import from file",
+                            callback: () => {
+                                let $file = $('<input type="file" accept="application/json,.json" />')
+                                .hide()
+                                .on('change', function () {
+                                    _handleFile(this.files[0]); // We care about only the first file.
+                                    $file.remove();
+                                })
+                                .appendTo("body")
+                                .click();
+                            }
+                        }, 'export-csde': {
+                            name: "Export (CSDE format)",
+                            callback: _exportCSDE
+                        }, 'export-uvnp': {
+                            name: "Export (UVNP format)",
+                            callback: _exportUVNP
+                        },'new': {
+                            name: 'Open blank file',
+                            callback: () => _graph.clear()
+                        }
+                    }
+                }
+            }
+        });
+
+        // Connector dragg-off menu.
+        $.contextMenu({
+            selector: 'div#drop-menu',
+            callback: function (itemKey, opt, rootMenu, originalEvent) {
+                let pos = {
+                    x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
+                    y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
+                };
+
+                newElement = new joint.shapes.dialogue[itemKey]({position: pos});
+                _graph.addCell(newElement);
+
+
+                _globalLinkValue.link.target({id: newElement.id, port: newElement.getPorts().find(element => element.group === _globalLinkValue.type).id});
+
+                _globalLinkValue = null;
+            }, items: {
+                'Text': {name: 'Speech'},
+                'Choice': {name: 'Choice'},
+                'Set': {name: 'Set flag'},
+                'Branch': {name: 'Conditional branch'}
+            }
+        });
     }
 
     function _registerPanning(paper, element) {
@@ -1380,7 +1466,8 @@ var csde = (function csdeMaster(){
 
     function notify(message, priority = "low") {
         if (!message) return;
-        if (!(priority === "low" || priority === "med" || priority === "high")) return;
+        if ($.type(message) !== "string" || $.type(priority) !== "string") return;
+        if (!["low", "med", "high"].includes(priority)) return;
 
         console.log("Notification: " + message);
 

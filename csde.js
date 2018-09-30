@@ -1131,7 +1131,6 @@ var csde = (function csdeMaster(){
             version: 0.1,
             nodes: nodes
         };
-        // return nodes;
     }
 
     function _graphToUVPN() {
@@ -1265,7 +1264,28 @@ var csde = (function csdeMaster(){
                 'data': {
                     name: 'Data management',
                     items: {
-                        'import': {
+                        'import-legacy': {
+                        name: "Import (legacy)",
+                            callback: () => {
+                                let $file = $('<input type="file" accept="application/json,.json" />')
+                                .hide()
+                                .on('change', function () {
+                                    let reader = new FileReader();
+
+                                    reader.onloadend = event => {
+                                        //load(JSON.parse(event.target.result));
+                                        notify("Starting legacy import!");
+                                        _graph.fromJSON(JSON.parse(event.target.result));
+                                    };
+
+                                    reader.readAsText(this.files[0]);
+
+                                    $file.remove();
+                                })
+                                .appendTo("body")
+                                .click();
+                            }
+                        }, 'import': {
                             name: "Import from file",
                             callback: () => {
                                 let $file = $('<input type="file" accept="application/json,.json" />')
@@ -1277,7 +1297,7 @@ var csde = (function csdeMaster(){
                                 .appendTo("body")
                                 .click();
                             }
-                        }, 'export-csde': {
+                        },'export-csde': {
                             name: "Export (CSDE format)",
                             callback: _exportCSDE
                         }, 'export-uvnp': {
@@ -1648,9 +1668,6 @@ var csde = (function csdeMaster(){
         }
     }
 
-    function debug() {
-    }
-
     return {
         addCharacter: character => _characters = addCharacter(character, _characters),
         addCharacters: characters => _characters = addCharacters(characters, _characters),
@@ -1660,7 +1677,6 @@ var csde = (function csdeMaster(){
         notify: notify,
         autosave: autosave,
         reduceRouterComplexity: reduceRouterComplexity,
-        start: initialize,
-        debug: debug
+        start: initialize
     };
 })();

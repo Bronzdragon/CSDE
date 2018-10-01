@@ -25,7 +25,6 @@ var csde = (function csdeMaster(){
 
         start () {
             if (this.timeoutId) this.stop();
-
             this.timeoutId = window.setTimeout(() => this._autosave(), this._interval);
         }
 
@@ -752,17 +751,12 @@ var csde = (function csdeMaster(){
             if (this.model.get('values').length < 1) {
                 this.addChoice();
             }
-            /*this.model.attr({
-                rect: {
-                    fill: `url(#${_style.gradient.choice})`
-                }
-            });*/
 
-            (function updateColour(outer){
+            (function _updateColour(outer){
                 if (_style.gradient.hasOwnProperty('choice')) {
                     outer.model.attr({ rect: { fill: `url(#${_style.gradient.choice})` } });
                 } else {
-                    window.setTimeout((o) => updateColour(o), 50, outer);
+                    window.setTimeout((o) => _updateColour(o), 50, outer);
                 }
             })(this);
         }
@@ -835,6 +829,11 @@ var csde = (function csdeMaster(){
             seed += Math.random().toString(32).slice(2);
         } while  (seed.length < length);
         return prefix + seed.slice(0, length);
+    }
+
+    function _pad(baseString, width, padSymbol = '0') {
+      baseString += '';
+      return baseString.length >= width ? baseString : new Array(width - baseString.length + 1).join(padSymbol) + baseString;
     }
 
     function _testImage(url, timeout = 5000) {
@@ -937,25 +936,309 @@ var csde = (function csdeMaster(){
         return character.hasOwnProperty('name') && character.hasOwnProperty('url');
     }
 
-    function _addNodeToGraph(nodeType, location) {
-        _graph.addCell(new nodeType ({ position: location }));
+    function _addNodeToGraph(nodeType, location, args = {}) {
+        args.position = location;
+        let newNode = new nodeType (/*{ position: location }*/args);
+        _graph.addCell(newNode);
+        return newNode;
     }
 
     function _handleFile(fileBlob) {
-        // let fileBlob = this.files[0];
-
-        if (fileBlob.type !== "application/json") {
+        /*if (fileBlob.type !== "application/json") {
             notify("Unsupported file.", "high");
             return;
-        }
+        }*/
 
         let reader = new FileReader();
 
         reader.onloadend = event => {
-            load(event.target.result);
+            load(JSON.parse(event.target.result));
         };
 
         reader.readAsText(fileBlob);
+    }
+
+    function _findConnectedElements(ports = [], links = [], trim = false) {
+        let outbound = [];
+        for (let port of ports) {
+            let portFound = false;
+            for (let link of links) {
+                if (link.get('source').port === port.id){
+                    portFound = true;
+                    outbound.push({
+                        text: port.text,
+                        id: link.get('target').id
+                    });
+                    break;
+                } else if (link.get('target').port === port.id) {
+                    portFound = true;
+                    outbound.push({
+                        text: port.text,
+                        id: link.get('source').id
+                    });
+                    break;
+                }
+            }
+
+            if (!trim && !portFound) {
+                outbound.push({
+                    text: port.text,
+                    id: null
+                });
+            }
+        }
+
+        return outbound;
+    }
+
+    function _CSDEToGraph(jsonObj) {
+        return new Promise((resolve, reject) => {
+            notify("Importing CSDE file", "med");
+            _graph.clear();
+
+            console.log(`\tVersion: ${jsonObj.version}`);
+
+            let promises = [];
+
+            for (let node of jsonObj.nodes) {
+                promises.push(new Promise((resolve, reject) => {
+                    let newNode = null;
+                    let values = null;
+                    switch (node.type) {
+                        case "dialogue.Text":
+                            newNode = _addNodeToGraph(joint.shapes.dialogue.Text, node.position, {
+                                id: node.id,
+                                actor: node.actor,
+                                speech: node.text
+                            });
+                            break;
+                        case "dialogue.Set":
+                            newNode = _addNodeToGraph(joint.shapes.dialogue.Set, node.position, {
+                                id: node.id,
+                                userKey: node.key,
+                                userValue: node.value
+                            });
+                            break;
+                        case "dialogue.Branch":
+                            let firstChoice = true;
+                            values = [];
+                            for (let element of node.outbound) {
+                                values.push({id: element.id || _generateId(), value: element.text, isDefault: firstChoice});
+                                firstChoice = false;
+                            }
+                            newNode = _addNodeToGraph(joint.shapes.dialogue.Branch, node.position, {
+                                id: node.id,
+                                userKey: node.key,
+                                values: values
+                            });
+
+                            break;
+                        case "dialogue.Choice":
+                            values = [];
+                            for (let element of node.outbound) {
+                                values.push({id: element.id || _generateId(), value: element.text, isDefault: false});
+                            }
+
+                            newNode = _addNodeToGraph(joint.shapes.dialogue.Choice, node.position, {
+                                id: node.id,
+                                values: values
+                            });
+                            break;
+                        default:
+                            break;
+                    }
+                    resolve(newNode);
+                }));
+            }
+
+            return Promise.all(promises).then(values =>{
+                for (let node of jsonObj.nodes) {
+                    for (let link of node.outbound) {
+                        if (!link.id) continue;
+
+                        let new_link = _defaultLink.clone();
+
+                        let inboundId = node.id;
+                        let inboundPort = null;
+                        let outboundId = link.id;
+                        let outboundPort = _graph.getCell(outboundId).getPorts().find(element => element.group === "input").id;
+
+                        if (["dialogue.Text", "dialogue.Set"].includes(node.type)){
+                            inboundPort = _graph.getCell(inboundId).getPorts().find(element => element.group === "output").id;
+                        } else {
+                            inboundPort = link.id;
+                        }
+
+                        new_link.source({id: inboundId,  port: inboundPort });
+                        new_link.target({id: outboundId, port: outboundPort});
+
+                        _graph.addCell(new_link);
+                    }
+                }
+            });
+        });
+    }
+
+    function _graphToCSDE() {
+        function _remapConnections(obj) {
+            return ({
+                id: newIds.get(obj.id),
+                text: obj.text
+            });
+        }
+
+        let nodes = [];
+        var newIds = new Map();
+
+        let nodeIdCounter = 0;
+        for (let element of _graph.getElements()) {
+            newIds.set(element.id, _pad(nodeIdCounter.toString(36), 4));
+            nodeIdCounter++;
+        }
+
+        for (let element of _graph.getElements()) {
+            let node = {
+                id: newIds.get(element.id),
+                type: element.get("type"),
+                position: element.get('position'),
+                outbound: []
+            };
+
+            let ports = [];
+            switch (node.type) {
+                case "dialogue.Text":
+                    node.actor = element.get("actor") || "unknown";
+                    node.text = element.get("speech") || "";
+
+                    ports = [{id: element.getPorts().find(port => port.group === "output").id, text: "output"}];
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), false).map(_remapConnections);
+                    break;
+                case "dialogue.Set":
+                    node.key = element.get("userKey") || "";
+                    node.value = element.get("userValue") || "";
+
+                    ports = [{id: element.getPorts().find(port => port.group === "output").id, text: "output"}];
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), false).map(_remapConnections);
+                    break;
+                case "dialogue.Branch":
+                    node.key = element.get("userKey") || "";
+
+                    ports = element.get("values").map(port => ({id: port.id, text: port.value}));
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), false).map(_remapConnections);
+                    break;
+                case "dialogue.Choice":
+                    ports = ports = element.get("values").map(port => ({id: port.id, text: port.value}));
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), false).map(_remapConnections);
+
+                    break;
+                case "dialogue.Note": /* falls through */
+                default:
+                    break;
+            }
+
+            if (["dialogue.Text", "dialogue.Set", "dialogue.Branch", "dialogue.Choice", "dialogue.Note"].includes(node.type)) {
+                nodes.push(node);
+            }
+        }
+
+        return {
+            version: 0.1,
+            nodes: nodes
+        };
+    }
+
+    function _graphToUVPN() {
+        function _remapConnections(obj) {
+            return ({
+                id: newIds.get(obj.id),
+                text: obj.text
+            });
+        }
+
+        let nodes = [];
+        var newIds = new Map();
+
+        let nodeIdCounter = 0;
+        for (let element of _graph.getElements()) {
+            newIds.set(element.id, _pad(nodeIdCounter.toString(36), 4));
+            nodeIdCounter++;
+        }
+
+        for (let element of _graph.getElements()) {
+            let type = element.get("type");
+            if (!["dialogue.Text", "dialogue.Set", "dialogue.Branch", "dialogue.Choice"].includes(type)) continue;
+
+            let node = {
+                id: newIds.get(element.id),
+                type: type,
+                outbound: []
+            };
+
+            let ports = [];
+            switch (node.type) {
+                case "dialogue.Text":
+                    node.actor = element.get("actor") || "unknown";
+                    node.text = element.get("speech") || "";
+
+                    ports = element.getPorts().filter(port => port.group === "output").map(port => ({id: port.id, text: "output"}));
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), true).map(_remapConnections);
+                    break;
+                case "dialogue.Set":
+                    node.key = element.get("userKey") || "";
+                    node.value = element.get("userValue") || "";
+
+                    ports = element.getPorts().find(port => port.group === "output").map(port => ({id: port.id, text: "output"}));
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), true).map(_remapConnections);
+                    break;
+                case "dialogue.Branch":
+                    node.key = element.get("userKey") || "";
+
+                    ports = element.get("values").map(port => ({id: port.id, text: port.value}));
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), true).map(_remapConnections);
+                    break;
+                case "dialogue.Choice":
+                    ports = ports = element.get("values").map(port => ({id: port.id, text: port.value}));
+                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), true).map(_remapConnections);
+                    break;
+                case "dialogue.Note": /* falls through */
+                default:
+                    break;
+            }
+
+            nodes.push(node);
+        }
+
+        return {
+            version: 0.1,
+            format: "UVNP",
+            nodes: nodes
+        };
+    }
+
+    function _exportCSDE() {
+        notify("Starting export of CSDE file.", "med");
+        _offerAsFile(_graphToCSDE(), "export.csde");
+    }
+
+    function _exportUVNP() {
+        notify("Exporting UVNP file.", "med");
+        _offerAsFile(_graphToUVPN(), "export.uvnp");
+    }
+
+    function _offerAsFile(data, filename = "download.json"){
+        if (!data || $.type(filename) !== "string") return;
+
+        let $link = $("<a>").
+        attr({
+            "download": filename,
+            "href": `data:application/json,${encodeURIComponent(JSON.stringify(data))}`,
+            "target": "_blank"
+        })
+        .hide();
+
+        $('body').append($link);
+        $link[0].click();
+        $link.remove();
     }
 
     function _addContextMenus(element) {
@@ -981,21 +1264,37 @@ var csde = (function csdeMaster(){
                         _addNodeToGraph(joint.shapes.dialogue[itemKey], pos);
                         break;
                     default:
-                        console.log("File management is not yet implemented.");
+                        notify("This option has not yet been implemented.", "low");
                         return;
                 }
             }, items: {
-                'Text': {name: 'Speech'},
+                'Text':   {name: 'Speech'},
                 'Choice': {name: 'Choice'},
-                'Set': {name: 'Set flag'},
+                'Set':    {name: 'Set flag'},
                 'Branch': {name: 'Conditional branch'},
-                'Note': {name: 'Note'},
-                'Base': {name: 'DEBUG - base'},
-                'Multi': {name: 'DEBUG - multi'},
+                'Note':   {name: 'Note'},
+                'Base':   {name: 'DEBUG - base'},
+                'Multi':  {name: 'DEBUG - multi'},
                 'data': {
                     name: 'Data management',
                     items: {
-                        'import': {
+                        'import-legacy': {
+                        name: "Import (legacy)",
+                            callback: () => {
+                                let $file = $('<input type="file" accept="application/json,.json" />')
+                                .hide()
+                                .on('change', function () {
+                                    let reader = new FileReader();
+                                    reader.onloadend = event => {
+                                        _graph.fromJSON(JSON.parse(event.target.result));
+                                    };
+                                    reader.readAsText(this.files[0]);
+                                    $file.remove();
+                                })
+                                .appendTo("body")
+                                .click();
+                            }
+                        }, 'import': {
                             name: "Import from file",
                             callback: () => {
                                 let $file = $('<input type="file" accept="application/json,.json" />')
@@ -1009,19 +1308,7 @@ var csde = (function csdeMaster(){
                             }
                         }, 'export-csde': {
                             name: "Export (CSDE format)",
-                            callback: () => {
-                                let $link = $("<a>").
-                                attr({
-                                    "download": "export.json",
-                                    "href": `data:application/json,${encodeURIComponent(JSON.stringify(_graph.toJSON()))}`,
-                                    "target": "_blank"
-                                })
-                                .hide();
-
-                                $('body').append($link);
-                                $link[0].click();
-                                $link.remove();
-                            }
+                            callback: _exportCSDE
                         }, 'export-uvnp': {
                             name: "Export (UVNP format)",
                             callback: _exportUVNP
@@ -1057,104 +1344,6 @@ var csde = (function csdeMaster(){
                 'Branch': {name: 'Conditional branch'}
             }
         });
-    }
-
-    function _exportUVNP() {
-        console.log("Exporting UVNP!");
-        let elements = _graph.getElements();
-
-        let nodes = [];
-
-        let findConnectedElement = (ports, links) => {
-            let filteredPorts = ports.filter(port => port.group === "output");
-            if (filteredPorts.length !== 1) { throw new RangeError("Detected too many (or too few) output ports for this type of node"); }
-            let portid = filteredPorts[0].id;
-            for (let link of links) {
-                if (link.get('source').port === portid) {
-                    return link.get('target').id;
-                } else if (link.get('target').port === portid) {
-                    return link.get('source').id;
-                }
-            }
-        };
-
-        let findConnectedElements = (choices, links) => {
-            let outbound = [];
-            for (let choice of choices) {
-                for (let link of links) {
-                    if (link.get('source').port === choice.id) {
-
-                        outbound.push({
-                            text: choice.value,
-                            id: link.get('target').id
-                        });
-                        break; // There should only be one output link anyway.
-                    } else if (link.get('target').port === choice.id) {
-                        outbound.push({
-                            text: choice.value,
-                            id: link.get('source').id
-                        });
-                        break; // There should only be one output link anyway.
-                    }
-                }
-            }
-            return outbound;
-        };
-
-        for (let element of elements) {
-            let node = {
-                id: element.id,
-                type: element.get("type"),
-                outbound: null
-            };
-
-            console.log("\n\tID: ", node.id);
-            console.log("\tType: ", node.type);
-
-            // let links = ;
-
-            // Collect all the outbound links here.
-            switch (node.type) {
-                case "dialogue.Text":
-                    node.outbound = findConnectedElement(element.getPorts(), _graph.getConnectedLinks(element));
-                    node.actor = element.get("actor");
-                    node.text = element.get("speech");
-                    break;
-                case "dialogue.Set":
-                    node.outbound = findConnectedElement(element.getPorts(), _graph.getConnectedLinks(element));
-                    node.key = element.get("userKey");
-                    node.value = element.get("userValue");
-                    break;
-                case "dialogue.Branch":
-                    node.outbound = findConnectedElements(element.get("values"), _graph.getConnectedLinks(element));
-                    node.key = element.get("userKey");
-                    break;
-                case "dialogue.Choice":
-                    node.outbound = findConnectedElements(element.get("values"), _graph.getConnectedLinks(element));
-                    break;
-                case "dialogue.Note": /* falls through */
-                default:
-                    break;
-            }
-
-            if (node.type !== "dialogue.Note") {
-                nodes.push(node);
-            }
-        }
-
-        console.log(nodes);
-
-        let $link = $("<a>").
-        attr({
-            "download": "export.csde",
-            "href": `data:application/json,${encodeURIComponent(JSON.stringify(nodes))}`,
-            "target": "_blank"
-        })
-        .hide();
-
-        $('body').append($link);
-        $link[0].click();
-        $link.remove();
     }
 
     function _registerPanning(paper, element) {
@@ -1385,7 +1574,8 @@ var csde = (function csdeMaster(){
 
     function notify(message, priority = "low") {
         if (!message) return;
-        if (!(priority === "low" || priority === "med" || priority === "high")) return;
+        if ($.type(message) !== "string" || $.type(priority) !== "string") return;
+        if (!["low", "med", "high"].includes(priority)) return;
 
         console.log("Notification: " + message);
 
@@ -1401,7 +1591,7 @@ var csde = (function csdeMaster(){
             timeoutDuration = 10000;
         } else if (priority === "med") {
             timeoutDuration = 4000;
-        } else {
+        } else { // if it is "low".
             timeoutDuration = 2000;
         }
 
@@ -1432,35 +1622,30 @@ var csde = (function csdeMaster(){
     }
 
     function save() {
-        let json = JSON.stringify(_graph.toJSON());
+        let json = _graphToCSDE();
         if (_isElectron) {
             mkdirp(_getSafefileLocation(), err => {
                 if (err) throw err;
             });
-            fs.writeFile(_getSafefileLocation(_getSafefileName()), json, 'utf8', err => {
+            fs.writeFile(_getSafefileLocation(_getSafefileName()), JSON.stringify(json), 'utf8', err => {
                 if (err) throw err;
             });
         } else {
-            localStorage.setItem(_getSafefileName(), json);
+            localStorage.setItem(_getSafefileName(), JSON.stringify(json));
         }
 
         notify("Saved.", "med");
     }
 
-    function load(dataText = null) {
-        let handleData = function (jsonText) {
-            let json = JSON.parse(jsonText);
-            if (json) {
-                notify("Data found, loading...", 'low');
-                _graph.clear();
-                _graph.fromJSON(json);
-
-                _paper.fitToContent({ padding: 4000 });
-            }
+    function load(data = null) {
+        let handleData = function (jsonObj) {
+            notify("Data found, loading...", 'low');
+            _CSDEToGraph(jsonObj);
+            _paper.fitToContent({ padding: 4000 });
         };
 
-        if (dataText) {
-            handleData(dataText);
+        if (data) {
+            handleData(data);
             return;
         }
 
@@ -1474,11 +1659,11 @@ var csde = (function csdeMaster(){
                     if (err.code === "ENOENT") return;
                         else throw err;
                 }
-                handleData(data);
+                handleData(JSON.parse(data));
             });
             return;
         } else {
-            handleData(localStorage.getItem(_getSafefileName()));
+            handleData(JSON.parse(localStorage.getItem(_getSafefileName())));
             return;
         }
     }

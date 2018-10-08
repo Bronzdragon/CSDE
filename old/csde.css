@@ -1,0 +1,418 @@
+.link-highlight path.connection{ /* Style for highlighting the paths corrently connected. */
+	stroke: red;
+	stroke-width: 10;
+}
+
+.connected-magnet {
+	stroke: red !important;
+}
+
+html, body {
+	padding: 0px; margin: 0px;
+	font-family: sans-serif;
+	font-size: small;
+	color: white;
+	background-color: black;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-button {
+  width: 0px;
+  height: 0px;
+}
+::-webkit-scrollbar-thumb {
+  background: #e1e1e1;
+  border: 3px none #ffffff;
+  border-radius: 50px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ffffff;
+}
+::-webkit-scrollbar-thumb:active {
+  background: yellow;
+}
+::-webkit-scrollbar-track {
+  background: #666666;
+  border: 0px none #ffffff;
+  border-radius: 100px;
+}
+::-webkit-scrollbar-track:hover {
+  background: #666666;
+}
+::-webkit-scrollbar-track:active {
+  background: #333333;
+}
+::-webkit-scrollbar-corner {
+  background: rgba(255,255,255, 0.5);
+}
+
+#container {
+	width:100vw;
+	height:100vh;
+	overflow: scroll; /* required for scrolling */
+}
+
+#paper {
+	background-color: #202229;
+}
+
+#notifications{
+	position: fixed;
+	padding: 5px;
+	z-index: 3;
+	right: 20px;
+	bottom: 20px;
+}
+
+/* Node styles */
+
+/***********************
+ * Generic node styles *
+ ***********************/
+
+.joint-type-dialogue-set rect:not(.magnet),
+.joint-type-dialogue-branch rect:not(.magnet),
+.joint-type-dialogue-note rect:not(.magnet) {
+	/* Choice and text are set elsewhere */
+   fill: #101219;
+   stroke: 'none';
+}
+
+.node {
+	position: absolute;
+	box-sizing: border-box;
+	background: transparent; /* Handled by the SVG instead. */
+	pointer-events: none;
+	-webkit-user-select: none;
+	z-index: 1;
+	padding-left: 24px;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
+	border-radius: 0px 10px 10px 0px;
+}
+
+.node button.delete {
+	text-align: center;
+	border-radius: 50%;
+	border:none;
+	height: 20px;
+	width: 20px;
+	line-height: 20px;
+	margin: 5px;
+	line-height: 0px;
+	box-shadow: 0px 0px 6px rgba(0,0,0,0.9), inset 0px 0px 3px darkgrey;
+
+ }
+
+.node select, .node input, .node textarea, .node button {
+	pointer-events: all;/* Enable mouse interaction. */
+}
+
+.node.multi {
+	border-radius: 0px 10px 10px 10px;
+}
+
+/*********************
+ * Multi node styles *
+ *********************/
+
+div.node.multi {
+	padding-left: 0px;
+}
+
+div.node div.choiceContainer, div.node div.header {
+	box-sizing: border-box;
+	/* width: 100%; */
+	padding-right: 24px;
+	display: flex;
+	flex-direction: column;
+
+}
+.choice .header {
+	background: linear-gradient(#abbaab 0%, #FFF 100%);
+	margin-left: 23px;
+	border-radius: 0px 10px 0px 0px;
+	box-shadow: 0px 5px 3px rgba(0,0,0,0.3);
+	border-bottom: solid grey 1px;
+}
+
+div.node div.header {
+	flex-direction: row;
+	justify-content: flex-end;
+	align-items: center;
+}
+
+div.node div.choiceContainer button.remove {
+	height: 100%;
+	width: 24px;
+	background-color: rgb(221, 221, 221);
+	border-bottom-color: rgb(221, 221, 221);
+	border-bottom-style:outset;
+	border-bottom-width: 2px;
+	border-left-color:rgb(221, 221, 221);
+	border-left-style:outset;
+	border-left-width:2px;
+	border-right-color:rgb(221, 221, 221);
+	border-right-style: outset;
+	border-right-width:2px;
+	border-top-color: rgb(221, 221, 221);
+	border-top-style:outset;
+	border-top-width:2px;
+}
+
+div.node div.choiceContainer input {
+	/* For allowing the content not to overflow due to margins and padding */
+	box-sizing: border-box;
+	float: right;
+	height: 100%;
+	width: calc(100% - 24px);
+	color: white;
+	background: rgba(0,0,0,0.3);
+	border-top: none;
+	border-bottom: solid 0.5px #d8d8d8;
+	border-right: none;
+	border-left: none;
+	padding: 20px;
+	font-size: 14px;
+	box-shadow: inset 0px 6px 20px #312e2a;
+}
+
+div.node div.footer div.add-row {
+	/* border-top: solid 0.5px grey; */
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+div.node div.footer div.add-row button.add {
+	width: 100%;
+	height: 100%;
+	background: rgba(0,0,0,0.3);;
+	border-radius: 0px 0px 10px 10px;
+	border: none;
+}
+div.node div.footer div.add-row button.add:hover {
+	background-color: rgba(200, 200, 200, 0.1);
+	border-radius: 0px 0px 10px 10px;
+}
+
+span.plus {
+	display: inline-block;
+	border-radius: 100%;
+	border:none;
+	height: 20px;
+	width: 20px;
+	color: black;
+	text-align:center;
+	background: white;
+	line-height:20px;
+}
+
+/*****************
+ * Magnet styles *
+ *****************/
+
+.magnet.input {
+	fill: auto;
+	stroke: rgba(255,255,255,0.1);
+	stroke-width: -1px;
+	stroke-linecap: round;
+}
+
+.magnet.output {
+	fill: auto;
+	stroke: rgba(255,255,255,0.1);
+	stroke-width: -1px;
+	stroke-linecap: round;
+}
+
+/********************
+ * Text Node style: *
+ ********************/
+
+.joint-type-dialogue-text rect {
+	fill: auto;/* url(#CharacterColour);*/
+	stroke: 'none';
+}
+
+.node.text {
+	/* For allowing the content not to overflow due to margins and padding */
+	box-sizing: border-box;
+	/* text-shadow: -1px 0 rgba(0,0,0,0.8), 0 1px rgba(50,50,50,0.8), 1px 0 rgba(50,50,50,0.8), 0 -1px rgba(50,50,50,0.8); */
+	font-family: sans-serif;
+}
+.node.text .left {
+	box-sizing: border-box;
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: flex-start;
+	align-items: center;
+	box-shadow: 5px 0px 3px rgba(0,0,0,0.3);
+	height: 100%;
+	border-right: solid grey 1px;
+}
+.node.text .left button.delete {
+	align-self: flex-end;
+}
+
+.portrait {
+	height: 140px;
+	width: 75px;
+	image-rendering: crisp-edges;
+}
+
+.node.text select {
+	background: rgba(0,0,0,0.4);
+	box-shadow: 0px 0px 8px rgba(0,0,0,0.8);
+	color: inherit;
+	text-shadow: inherit;
+	font-size: inherit;
+	border: none;
+	padding: 5px 0;
+}
+
+.node.text select option {
+	background-color: #101219;
+	color: inherit;
+	font-family: inherit;
+	text-shadow: inherit;
+	font-size: inherit;
+}
+
+.node.text textarea {
+	float: right;
+	position: relative;
+	padding: 20px;
+	color: white;
+	font-family: inherit;
+	text-shadow: inherit;
+	font-size: 20px;
+	font-weight: lighter;
+	background: rgba(0,0,0,0.3);
+	border: none;
+	resize: none;
+	height: 100%;
+	width: 80%;
+	box-sizing: border-box; /* for allowing the textarea to align vertically */
+	border-radius: 0px 11px 11px 0px;
+}
+
+.node.text textarea::placeholder{
+	color: rgba(0, 0, 0, 0.4);
+	font-size: 120px;
+	text-align: center;
+}
+
+/****************
+* Set Node style:
+*****************/
+
+.node.set {
+	/* For allowing the content not to overflow due to margins and padding */
+	box-sizing: border-box;
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: space-around;
+	align-items: center;
+	padding: 10px 0px; /* Padding at top and bottom */
+
+}
+
+.node.set button.delete{
+	align-self: flex-end;
+	margin-right: 24px;
+}
+
+/*****************
+* Note Node style:
+******************/
+.node.note {
+	border-radius: 11px;
+	box-sizing: border-box;
+}
+.node.note button.delete{
+	position: relative;
+	margin: 16px;
+	float: right;
+}
+.node.note textarea {
+	color: white;
+	font-family: inherit;
+	text-shadow: inherit;
+	font-size: 20px;
+	font-weight: lighter;
+	/* background: rgba(0,0,0,0.3); */
+	background: transparent;
+	border: none;
+	resize: none;
+	/* Padding and positioning is overwritten by the JS */
+	line-height: 24px; /* Must be set for the auto-expanding textbox to work.*/
+}
+
+/*******************
+* Choice Node style:
+********************/
+
+.joint-type-dialogue-choice rect {
+	fill: auto; /*url(#ChoiceColour)*/
+}
+
+
+.node input.value.default {
+	border: none;
+	background-color: #FFCCCC;
+}
+
+div.node.branch div.header {
+	display: flex;
+	flex-direction: column;
+}
+
+div.node.branch div.delete-holder {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-end;
+	align-items: center;
+}
+
+div.node.branch div.header div {
+	width: 100%
+}
+div.node.branch div.header input {
+	box-sizing: border-box;
+	float: right;
+
+	border: 0px, 0px, 1px, 0px;
+
+	height: 100%;
+	width: calc(100% - 24px)
+}
+
+/* Editor tools */
+
+.marker-target {
+	fill: #fff;
+	stroke-width: 0;
+}
+
+.marker-vertex, .marker-arrowhead {
+	fill: #fff;
+}
+.marker-vertex:hover, .marker-arrowhead {
+	stroke: none;
+}
+
+.marker-vertex:hover, .marker-arrowhead:hover {
+	fill: #000;
+}
+
+.link-tools .tool-remove circle {
+	/* Don't know where this colour is used. */
+	fill: #c0392b;
+}
+
+.connection {
+	stroke: #fff;
+	stroke-width: 5;
+}

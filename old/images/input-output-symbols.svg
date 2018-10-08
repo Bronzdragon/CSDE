@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="8" height="8" xmlns="http://www.w3.org/2000/svg">
+    <!-- Created with Method Draw - http://github.com/duopixel/Method-Draw/ -->
+    <symbol id="input-left" viewBox="0 0 640 640">
+        <rect width="400" height="400" fill="00F" />
+        <!-- <defs> -->
+            <!-- <path d="M380.02 177.5L236.02 321.49L380.01 465.5L380.02 353.5L506.8 353.5L506.8 577.5L156.01 577.5L124.01 577.5L124.03 65.5L147.94 65.5L147.92 577.5L179.92 577.5L179.94 65.5L506.8 65.5L506.8 289.5L380.02 289.5L380.02 177.5Z" id="a4ZhDpYWo" /> -->
+        <!-- </defs> -->
+        <!-- <g> -->
+            <!--<g>
+                <filter id="shadow2202947" x="115.01" y="56.5" width="401.8" height="531" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse">
+                    <feFlood />
+                    <feComposite in2="SourceAlpha" operator="in" />
+                    <feGaussianBlur stdDeviation="1" />
+                    <feOffset dx="1" dy="1" result="afterOffset" />
+                    <feFlood flood-color="#ffffff" flood-opacity="1" />
+                    <feComposite in2="afterOffset" operator="in" />
+                    <feMorphology operator="dilate" radius="1" />
+                    <feComposite in2="SourceAlpha" operator="out" />
+                </filter>
+                <path d="M380.02 177.5L236.02 321.49L380.01 465.5L380.02 353.5L506.8 353.5L506.8 577.5L156.01 577.5L124.01 577.5L124.03 65.5L147.94 65.5L147.92 577.5L179.92 577.5L179.94 65.5L506.8 65.5L506.8 289.5L380.02 289.5L380.02 177.5Z" id="c71gfYVCij" fill="white" fill-opacity="1" filter="url(#shadow2202947)" />
+            </g>
+            <g>
+                <filter id="shadow13041194" x="90.01" y="31.5" width="455.8" height="585" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse">
+                    <feFlood />
+                    <feComposite in2="SourceAlpha" operator="out" />
+                    <feGaussianBlur stdDeviation="3.16" />
+                    <feOffset dx="5" dy="5" result="afterOffset" />
+                    <feFlood flood-color="#000000" flood-opacity="1" />
+                    <feComposite in2="afterOffset" operator="in" />
+                    <feMorphology operator="dilate" radius="4" />
+                    <feComposite in2="SourceAlpha" operator="in" />
+                </filter>
+                <path d="M380.02 177.5L236.02 321.49L380.01 465.5L380.02 353.5L506.8 353.5L506.8 577.5L156.01 577.5L124.01 577.5L124.03 65.5L147.94 65.5L147.92 577.5L179.92 577.5L179.94 65.5L506.8 65.5L506.8 289.5L380.02 289.5L380.02 177.5Z" id="bjBtUwrAE" fill="white" fill-opacity="1" filter="url(#shadow13041194)" />
+            </g>-->
+        <!-- </g> -->
+    </symbol>
+    <symbol id="input-right" viewBox="0 0 400 400">
+        <rect width="400" height="400" fill="00F">
+        <!-- <rect rx="50" id="svg_1" height="222.000432" width="222.000432" y="88.999786" x="151.309168" stroke-width="30" stroke="#000" fill="#fff" /> -->
+        <!-- <path id="svg_2" d="m28.99754,302.688171l102.712696,-102.712204l-102.712696,-102.712357l58.705631,-58.700096l161.430649,161.412453l-161.430649,161.462326" stroke-width="41" stroke="#000" fill="#fff" /> -->
+    </symbol>
+    <symbol id="output-left" viewBox="0 0 400 400">
+        <rect width="400" height="400" fill="00F">
+        <!-- <rect rx="50" id="svg_1" height="222" width="222.000432" y="89" x="159.862844" stroke-width="30" stroke="#000" fill="#fff" /> -->
+        <!-- <path transform="rotate(180, 139.909, 200)" id="svg_2" d="m29.84082,302.688171l102.712692,-102.712204l-102.712692,-102.712357l58.705627,-58.700096l161.430664,161.412453l-161.430664,161.462326" stroke-width="41" stroke="#000" fill="#fff" /> -->
+    </symbol>
+    <symbol id="output-right" viewBox="0 0 400 400">
+        <rect width="400" height="400" fill="00F">
+        <!-- <rect rx="50" id="svg_1" height="222.000432" width="222.000432" y="88.999786" x="17.855738" stroke-width="30" stroke="#000" fill="#fff" /> -->
+        <!-- <path id="svg_2" d="m148.70491,302.688171l102.712692,-102.712204l-102.712692,-102.712357l58.705627,-58.700096l161.430649,161.412453l-161.430649,161.462326" stroke-width="41" stroke="#000" fill="#fff" /> -->
+    </symbol>
+</svg>

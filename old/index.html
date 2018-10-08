@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CSDE</title>
+<!-- <link rel="stylesheet" type="text/css" href="./node_modules/jointjs/dist/joint.css" />
+<link rel="stylesheet" type="text/css" href="./node_modules/jquery-contextmenu/dist/jquery.contextMenu.css" /> -->
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jointjs/2.1.0/joint.css" />
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.7.0/jquery.contextMenu.min.css" />
+<link rel="stylesheet" type="text/css" href="./csde.css" />
+
+<script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.7.0/jquery.contextMenu.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.7.0/jquery.ui.position.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.3.3/backbone.js"></script>
+<!--  Explicityly added, because I did not find a CDN -->
+<script src="./node_modules/jointjs/dist/joint.js" charset="utf-8"></script>
+<script src="./node_modules/node-vibrant/dist/vibrant.js" charset="utf-8"></script>
+<script>if (window.module) module = window.module;</script>
+<script src="lib/autoresize.jquery.js" charset="utf-8"></script>
+
+<script src="./csde.js" charset="utf-8"></script>
+</head>
+    <div id="notifications"></div>
+    <div id="container">
+        <div id="paper"></div>
+    </div>
+    <div id="drop-menu"></div>
+    <script type="text/javascript">
+        const CHARACTERS = [
+          { "name": "Alexsi", "url": "alexsi.png" },
+          { "name": "Alexsia", "url": "alexsia.png" },
+          { "name": "Benediktas", "url": "benediktas.png" },
+          { "name": "Burgundy", "url": "burgundy.png" },
+          { "name": "Cynthia", "url": "cynthia.png", "main": true },
+          { "name": "Danielle", "url": "danielle.png" },
+          { "name": "Ditri", "url": "ditri.png" },
+          { "name": "Dragon", "url": "dragon.png" },
+          { "name": "Esteban", "url": "esteban.png" },
+          { "name": "Guy", "url": "guy.png" },
+          { "name": "Han Seon", "url": "han_seon.png" },
+          { "name": "Hayate", "url": "hayate.png" },
+          { "name": "Helmut", "url": "helmut.png" },
+          { "name": "Hoglan", "url": "hoglan.png" },
+          { "name": "Judah", "url": "judah.png" },
+          { "name": "Lars", "url": "lars.png" },
+          { "name": "Maxim", "url": "maxim.png" },
+          { "name": "Michael", "url": "michael.png" },
+          { "name": "Nanu", "url": "nanu.png" },
+          { "name": "Nora", "url": "nora.png" },
+          { "name": "Prussia", "url": "prussia.png" },
+          { "name": "Samira", "url": "samira.png" },
+          { "name": "Snake", "url": "snake.png" },
+          { "name": "TripXerx", "url": "tripxerx.png" },
+          { "name": "Valarie", "url": "valarie.png" },
+        ];
+        csde.addCharacters(CHARACTERS);
+        csde.start($('div#container'), {width: 16000, height: 8000});
+    </script>
+</body>
+</html>

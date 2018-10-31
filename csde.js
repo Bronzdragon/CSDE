@@ -1292,7 +1292,7 @@ var csde = (function csdeMaster(){
                         }, 'import': {
                             name: "Import from file",
                             callback: () => {
-                                let $file = $('<input type="file" accept="application/json,.json" />')
+                                let $file = $('<input type="file" accept="application/json,.csde" />')
                                 .hide()
                                 .on('change', function () {
                                     _handleFile(this.files[0]); // We care about only the first file.

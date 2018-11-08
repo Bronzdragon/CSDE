@@ -991,15 +991,16 @@ var csde = (function csdeMaster(){
         //graph.clear();
 
         console.log(`\tVersion: ${jsonObj.version}`);
-
-
-        let node = jsonObj.nodes.pop();
         //console.log("Loading new node: ", node);
 
-        if(!jsonObj.createdNodes){
-            jsonObj.createdNodes = [];
-        }
+        jsonObj.createdNodes = [];
+        _CSDEToGraph_CreateNodes(jsonObj, graph);
+        // will link into createLinks as well.
 
+    }
+
+    function _CSDEToGraph_CreateNodes(jsonObj, graph) {
+        let node = jsonObj.nodes.pop();
         let newNode = null;
         let values = null;
         switch (node.type) {
@@ -1049,7 +1050,7 @@ var csde = (function csdeMaster(){
         jsonObj.createdNodes.push(node);
         if (jsonObj.nodes.length > 0) {
             // If there's more nodes to add to the graph, do so later.
-            window.setTimeout(_CSDEToGraph, 0, jsonObj, graph);
+            window.setTimeout(_CSDEToGraph_CreateNodes, 0, jsonObj, graph);
         } else {
             window.setTimeout(_CSDEToGraph_CreateLinks, 0, jsonObj.createdNodes, graph);
         }
@@ -1081,6 +1082,8 @@ var csde = (function csdeMaster(){
 
         if (nodelist.length > 0) {
             window.setTimeout(_CSDEToGraph_CreateLinks, 0, nodelist, graph);
+        } else {
+            notify("CSDE file has been imported.", "med");
         }
     }
 

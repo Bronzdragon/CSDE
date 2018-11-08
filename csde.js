@@ -992,8 +992,13 @@ var csde = (function csdeMaster(){
 
         console.log(`\tVersion: ${jsonObj.version}`);
 
+
         let node = jsonObj.nodes.pop();
-        console.log("Loading new node: ", node);
+        //console.log("Loading new node: ", node);
+
+        if(!jsonObj.createdNodes){
+            jsonObj.createdNodes = [];
+        }
 
         let newNode = null;
         let values = null;
@@ -1041,32 +1046,41 @@ var csde = (function csdeMaster(){
                 break;
         }
 
-        // Generate links
-        // for (let link of node.outbound) {
-        //     if (!link.id) continue;
-        //
-        //     let new_link = _defaultLink.clone();
-        //
-        //     let inboundId = node.id;
-        //     let inboundPort = null;
-        //     let outboundId = link.id;
-        //     let outboundPort = graph.getCell(outboundId).getPorts().find(element => element.group === "input").id;
-        //
-        //     if (["dialogue.Text", "dialogue.Set"].includes(node.type)){
-        //         inboundPort = graph.getCell(inboundId).getPorts().find(element => element.group === "output").id;
-        //     } else {
-        //         inboundPort = link.id;
-        //     }
-        //
-        //     new_link.source({id: inboundId,  port: inboundPort });
-        //     new_link.target({id: outboundId, port: outboundPort});
-        //
-        //     graph.addCell(new_link);
-        // }
-
+        jsonObj.createdNodes.push(node);
         if (jsonObj.nodes.length > 0) {
             // If there's more nodes to add to the graph, do so later.
             window.setTimeout(_CSDEToGraph, 0, jsonObj, graph);
+        } else {
+            window.setTimeout(_CSDEToGraph_CreateLinks, 0, jsonObj.createdNodes, graph);
+        }
+    }
+
+    function _CSDEToGraph_CreateLinks(nodelist, graph) {
+        let node = nodelist.pop();
+        for (let link of node.outbound) {
+            if (!link.id) continue;
+
+            let new_link = _defaultLink.clone();
+
+            let inboundId = node.id;
+            let inboundPort = null;
+            let outboundId = link.id;
+            let outboundPort = graph.getCell(outboundId).getPorts().find(element => element.group === "input").id;
+
+            if (["dialogue.Text", "dialogue.Set"].includes(node.type)){
+                inboundPort = graph.getCell(inboundId).getPorts().find(element => element.group === "output").id;
+            } else {
+                inboundPort = link.id;
+            }
+
+            new_link.source({id: inboundId,  port: inboundPort });
+            new_link.target({id: outboundId, port: outboundPort});
+
+            graph.addCell(new_link);
+        }
+
+        if (nodelist.length > 0) {
+            window.setTimeout(_CSDEToGraph_CreateLinks, 0, nodelist, graph);
         }
     }
 

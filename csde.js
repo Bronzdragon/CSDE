@@ -986,92 +986,88 @@ var csde = (function csdeMaster(){
         return outbound;
     }
 
-    function _CSDEToGraph(jsonObj) {
-        return new Promise((resolve, reject) => {
-            notify("Importing CSDE file", "med");
-            _graph.clear();
+    function _CSDEToGraph(jsonObj, graph) {
+        notify("Importing CSDE file", "med");
+        //graph.clear();
 
-            console.log(`\tVersion: ${jsonObj.version}`);
+        console.log(`\tVersion: ${jsonObj.version}`);
 
-            let promises = [];
+        let node = jsonObj.nodes.pop();
+        console.log("Loading new node: ", node);
 
-            for (let node of jsonObj.nodes) {
-                promises.push(new Promise((resolve, reject) => {
-                    let newNode = null;
-                    let values = null;
-                    switch (node.type) {
-                        case "dialogue.Text":
-                            newNode = _addNodeToGraph(joint.shapes.dialogue.Text, node.position, {
-                                id: node.id,
-                                actor: node.actor,
-                                speech: node.text
-                            });
-                            break;
-                        case "dialogue.Set":
-                            newNode = _addNodeToGraph(joint.shapes.dialogue.Set, node.position, {
-                                id: node.id,
-                                userKey: node.key,
-                                userValue: node.value
-                            });
-                            break;
-                        case "dialogue.Branch":
-                            let firstChoice = true;
-                            values = [];
-                            for (let element of node.outbound) {
-                                values.push({id: element.id || _generateId(), value: element.text, isDefault: firstChoice});
-                                firstChoice = false;
-                            }
-                            newNode = _addNodeToGraph(joint.shapes.dialogue.Branch, node.position, {
-                                id: node.id,
-                                userKey: node.key,
-                                values: values
-                            });
-
-                            break;
-                        case "dialogue.Choice":
-                            values = [];
-                            for (let element of node.outbound) {
-                                values.push({id: element.id || _generateId(), value: element.text, isDefault: false});
-                            }
-
-                            newNode = _addNodeToGraph(joint.shapes.dialogue.Choice, node.position, {
-                                id: node.id,
-                                values: values
-                            });
-                            break;
-                        default:
-                            break;
-                    }
-                    resolve(newNode);
-                }));
-            }
-
-            return Promise.all(promises).then(values =>{
-                for (let node of jsonObj.nodes) {
-                    for (let link of node.outbound) {
-                        if (!link.id) continue;
-
-                        let new_link = _defaultLink.clone();
-
-                        let inboundId = node.id;
-                        let inboundPort = null;
-                        let outboundId = link.id;
-                        let outboundPort = _graph.getCell(outboundId).getPorts().find(element => element.group === "input").id;
-
-                        if (["dialogue.Text", "dialogue.Set"].includes(node.type)){
-                            inboundPort = _graph.getCell(inboundId).getPorts().find(element => element.group === "output").id;
-                        } else {
-                            inboundPort = link.id;
-                        }
-
-                        new_link.source({id: inboundId,  port: inboundPort });
-                        new_link.target({id: outboundId, port: outboundPort});
-
-                        _graph.addCell(new_link);
-                    }
+        let newNode = null;
+        let values = null;
+        switch (node.type) {
+            case "dialogue.Text":
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Text, node.position, {
+                    id: node.id,
+                    actor: node.actor,
+                    speech: node.text
+                });
+                break;
+            case "dialogue.Set":
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Set, node.position, {
+                    id: node.id,
+                    userKey: node.key,
+                    userValue: node.value
+                });
+                break;
+            case "dialogue.Branch":
+                let firstChoice = true;
+                values = [];
+                for (let element of node.outbound) {
+                    values.push({id: element.id || _generateId(), value: element.text, isDefault: firstChoice});
+                    firstChoice = false;
                 }
-            });
-        });
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Branch, node.position, {
+                    id: node.id,
+                    userKey: node.key,
+                    values: values
+                });
+
+                break;
+            case "dialogue.Choice":
+                values = [];
+                for (let element of node.outbound) {
+                    values.push({id: element.id || _generateId(), value: element.text, isDefault: false});
+                }
+
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Choice, node.position, {
+                    id: node.id,
+                    values: values
+                });
+                break;
+            default:
+                break;
+        }
+
+        // Generate links
+        // for (let link of node.outbound) {
+        //     if (!link.id) continue;
+        //
+        //     let new_link = _defaultLink.clone();
+        //
+        //     let inboundId = node.id;
+        //     let inboundPort = null;
+        //     let outboundId = link.id;
+        //     let outboundPort = graph.getCell(outboundId).getPorts().find(element => element.group === "input").id;
+        //
+        //     if (["dialogue.Text", "dialogue.Set"].includes(node.type)){
+        //         inboundPort = graph.getCell(inboundId).getPorts().find(element => element.group === "output").id;
+        //     } else {
+        //         inboundPort = link.id;
+        //     }
+        //
+        //     new_link.source({id: inboundId,  port: inboundPort });
+        //     new_link.target({id: outboundId, port: outboundPort});
+        //
+        //     graph.addCell(new_link);
+        // }
+
+        if (jsonObj.nodes.length > 0) {
+            // If there's more nodes to add to the graph, do so later.
+            window.setTimeout(_CSDEToGraph, 0, jsonObj, graph);
+        }
     }
 
     function _graphToCSDE() {
@@ -1635,7 +1631,7 @@ var csde = (function csdeMaster(){
     function load(data = null) {
         let handleData = function (jsonObj) {
             notify("Data found, loading...", 'low');
-            _CSDEToGraph(jsonObj);
+            _CSDEToGraph(jsonObj, _graph);
             _paper.fitToContent({ padding: 4000 });
         };
 

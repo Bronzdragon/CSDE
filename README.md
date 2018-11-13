@@ -4,7 +4,10 @@ CSDE (which stands for Chat Style Dialog Editor), is a chat style dialogue edito
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+You can see this project online:
+https://bronzdragon.github.io/CSDE/
+
+Or to run it locally, follow these steps:
 
 ### Prerequisites
 

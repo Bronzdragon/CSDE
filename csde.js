@@ -1043,8 +1043,16 @@ var csde = (function csdeMaster(){
                     values: values
                 });
                 break;
+            case "dialogue.Note": //comment
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Note, node.position, {
+                    id: node.id,
+                    noteText: node.text
+                });
+                break;
             default:
                 break;
+
+            return newNode;
         }
 
         jsonObj.createdNodes.push(node);
@@ -1090,7 +1098,7 @@ var csde = (function csdeMaster(){
     function _graphToCSDE() {
         function _remapConnections(obj) {
             return ({
-                id: newIds.get(obj.id),
+                id: newIds.get(obj.id) || null,
                 text: obj.text
             });
         }
@@ -1112,7 +1120,7 @@ var csde = (function csdeMaster(){
                 outbound: []
             };
 
-            let ports = [];
+            let ports;
             switch (node.type) {
                 case "dialogue.Text":
                     node.actor = element.get("actor") || "unknown";
@@ -1140,7 +1148,9 @@ var csde = (function csdeMaster(){
 
                     break;
                 case "dialogue.Note": /* falls through */
+                    node.text = element.get("noteText") || "";
                 default:
+                    node.outbound = [];
                     break;
             }
 
@@ -1208,7 +1218,8 @@ var csde = (function csdeMaster(){
                     ports = ports = element.get("values").map(port => ({id: port.id, text: port.value}));
                     node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), true).map(_remapConnections);
                     break;
-                case "dialogue.Note": /* falls through */
+                case "dialogue.Note":
+                    node.text = element.get("text") || "";
                 default:
                     break;
             }

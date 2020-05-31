@@ -10,6 +10,7 @@ if (_isElectron) {
 }
 
 var csde = (function csdeMaster(){
+    let _currentFileName = null;
     class Autosaver{
         constructor(interval = 60 * 1000) {
             this._interval = interval;
@@ -49,6 +50,32 @@ var csde = (function csdeMaster(){
         panning: false,
         position: { x: 0, y: 0 }
     };
+
+    function openFile(filePath = "") {
+        _graph.clear()
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                throw err;
+            }
+            load(JSON.parse(data));
+        });
+        console.log("Loading file:  ", filePath)
+    }
+
+    function saveFileAs(filePath = "") {
+        const jsonText = JSON.stringify(_graphToCSDE());
+        console.log("Saving to: ", filePath, "\nContents: ", jsonText);
+        fs.writeFile(filePath, jsonText, function(err){
+            if(err){
+                throw err;
+            }
+        })
+    }
+
+    function setFileName(name) {
+        _currentFileName = name;
+        $("input#filename-textbox").val(name);
+    }
 
     const _defaultLink = new joint.dia.Link({
         router:    { name: 'metro' },
@@ -739,18 +766,20 @@ var csde = (function csdeMaster(){
 
             this.$box.$url = this.$box.find("input");
 
-            this.$box.on("dblclick", function (event) {
+            this.$box.on("dblclick", (event) => {
                 console.log("Open the file!")
                 // event.preventDefault();
+
                 const url = this.model.get("url");
                 saveFileAs(path.format({
                     dir: process.cwd(),
-                    name: "old", // TODO: Save current file name.
+                    name: _currentFileName,
                     ext: ".json",
-                }))
+                }));
+
                 openFile(path.format({
                     dir: process.cwd(),
-                    name: url,
+                    name: this.$box.$url.val(),
                     ext: ".json",
                 }));
             })
@@ -1055,6 +1084,9 @@ var csde = (function csdeMaster(){
         console.log(`\tVersion: ${jsonObj.version}`);
         //console.log("Loading new node: ", node);
 
+        console.log(`\tTitle: ${jsonObj.title}`);
+        setFileName(jsonObj.title)
+
         jsonObj.createdNodes = [];
         _CSDEToGraph_CreateNodes(jsonObj, graph);
         // will link into createLinks as well.
@@ -1131,6 +1163,8 @@ var csde = (function csdeMaster(){
         } else {
             window.setTimeout(_CSDEToGraph_CreateLinks, 0, jsonObj.createdNodes, graph);
         }
+
+        return newNode;
     }
 
     function _CSDEToGraph_CreateLinks(nodelist, graph) {
@@ -1232,7 +1266,8 @@ var csde = (function csdeMaster(){
         }
 
         return {
-            version: 0.1,
+            version: "0.1.1",
+            title: _currentFileName,
             nodes: nodes
         };
     }
@@ -1329,8 +1364,8 @@ var csde = (function csdeMaster(){
         .appendTo($('body'))
         .click()
         .remove();
-
         
+        setFileName(filename)
     }
 
     function _addContextMenus(element) {
@@ -1394,6 +1429,7 @@ var csde = (function csdeMaster(){
                                 let $file = $('<input type="file" accept="application/json,.csde" />')
                                 .hide()
                                 .on('change', function (event) {
+                                    setFileName(this.value.slice(12, -5));
                                     _handleFile(this.files[0]); // We care about only the first file.
                                     $file.remove();
                                 })
@@ -1588,7 +1624,7 @@ var csde = (function csdeMaster(){
             validateMagnet: _validateMagnet,
             snapLinks: { radius: 100 }, // How many pixels away should a link 'snap'?
             restrictTranslate: true, // Stops elements from being dragged offscreen.
-            // perpendicularLinks: true, // Seems to do very little
+            perpendicularLinks: true, // Seems to do very little
             // markAvailable: true
         });
 
@@ -1649,6 +1685,29 @@ var csde = (function csdeMaster(){
             let file = event.originalEvent.dataTransfer.files[0]; // We're only intersted in one file.
             _handleFile(file);
         });
+
+        const filenameElement = $("#filename-textbox")
+        const filenameButtonElement = $("#filename-button")
+
+        filenameElement.on('change', event => {
+            setFileName(event.target.value)
+        })
+
+        filenameButtonElement.on('click', event => {
+            if(!filenameElement.val()){
+                save();
+                return
+            }
+
+            const filePath = path.format({
+                dir: process.cwd(),
+                name: _currentFileName,
+                ext: ".json",
+            })
+
+            saveFileAs(filePath);
+            
+        })
 
         _style.gradient = _createGradients();
 

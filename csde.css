@@ -67,6 +67,14 @@ html, body {
 	bottom: 20px;
 }
 
+#filename {
+	position: fixed;
+	left: 20px;
+	top: 20px;
+	z-index: 3;
+
+}
+
 /* Node styles */
 
 /***********************
@@ -348,6 +356,25 @@ span.plus {
 	resize: none;
 	/* Padding and positioning is overwritten by the JS */
 	line-height: 24px; /* Must be set for the auto-expanding textbox to work.*/
+}
+
+/***********************
+* Scene Node style:
+************************/
+
+.node.scene {
+	/* For allowing the content not to overflow due to margins and padding */
+	box-sizing: border-box;
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: space-around;
+	align-items: center;
+	padding: 10px 0px; /* Padding at top and bottom */
+}
+
+.node.scene button.delete{
+	align-self: flex-end;
+	margin-right: 24px;
 }
 
 /*******************

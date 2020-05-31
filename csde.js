@@ -535,12 +535,16 @@ var csde = (function csdeMaster(){
             this.$box.$speech.submit(event => { // Spanw a new textbox when enter is pressed
                 let bounding_box = this.model.getBBox();
                 let new_box = new joint.shapes.dialogue.Text({
-                    position: {x: bounding_box.x , y: bounding_box.y + bounding_box.height + (_gridSize * 1)}
+                    position: {
+                        x: bounding_box.x ,
+                        y: bounding_box.y + bounding_box.height + (_gridSize * 1)
+                    }
                 });
 
                 let parentActor = "";
                 let portId = this.model.getPorts().find(port => port.group === "input").id;
 
+                /* Try to find a valid parent actor for back & forth conversations */
                 for (let link of _graph.getConnectedLinks(this.model)) {
                     // Make sure the link is connected to us.
                     if (link.get('source').port !== portId && link.get('target').port !== portId) { continue; }
@@ -678,7 +682,7 @@ var csde = (function csdeMaster(){
     });
 
     joint.shapes.dialogue.Base.define('dialogue.Note', {
-        size: { width: _style.node.note.width, height: _style.node.note.height },
+        size: { ..._style.node.note },
         noteText: null
     });
     joint.shapes.dialogue.NoteView = joint.shapes.dialogue.BaseView.extend({
@@ -1119,7 +1123,7 @@ var csde = (function csdeMaster(){
 
         jsonObj.createdNodes.push(node);
         if (jsonObj.nodes.length > 0) {
-            // If there's more nodes to add to the graph, do so later.
+            // If there's more nodes to add to the graph, do so later. This way we don't block this thread.
             window.setTimeout(_CSDEToGraph_CreateNodes, 0, jsonObj, graph);
         } else {
             window.setTimeout(_CSDEToGraph_CreateLinks, 0, jsonObj.createdNodes, graph);
@@ -1139,6 +1143,7 @@ var csde = (function csdeMaster(){
             let outboundPort = graph.getCell(outboundId).getPorts().find(element => element.group === "input").id;
 
             if (["dialogue.Text", "dialogue.Set"].includes(node.type)){
+                // ??? Why are these two different?
                 inboundPort = graph.getCell(inboundId).getPorts().find(element => element.group === "output").id;
             } else {
                 inboundPort = link.id;
@@ -1151,6 +1156,7 @@ var csde = (function csdeMaster(){
         }
 
         if (nodelist.length > 0) {
+            // If there's more nodes to link, add a todo, so we don't block this thread.
             window.setTimeout(_CSDEToGraph_CreateLinks, 0, nodelist, graph);
         } else {
             notify("CSDE file has been imported.", "med");
@@ -1368,11 +1374,11 @@ var csde = (function csdeMaster(){
                             callback: () => {
                                 let $file = $('<input type="file" accept="application/json,.json" />')
                                 .hide()
-                                .on('change', function () {
+                                .on('change', function (event) {
                                     let reader = new FileReader();
-                                    reader.onloadend = event => {
+                                    reader.addEventListener("loadend",  event => {
                                         _graph.fromJSON(JSON.parse(event.target.result));
-                                    };
+                                    });
                                     reader.readAsText(this.files[0]);
                                     $file.remove();
                                 })
@@ -1384,7 +1390,7 @@ var csde = (function csdeMaster(){
                             callback: () => {
                                 let $file = $('<input type="file" accept="application/json,.csde" />')
                                 .hide()
-                                .on('change', function () {
+                                .on('change', function (event) {
                                     _handleFile(this.files[0]); // We care about only the first file.
                                     $file.remove();
                                 })
@@ -1540,7 +1546,7 @@ var csde = (function csdeMaster(){
     }
 
     function _highlightLinks(linksToHighlight) {
-        if (! Array.isArray(linksToHighlight) || ! linksToHighlight.every(link => link.isLink())) {
+        if (!Array.isArray(linksToHighlight) || ! linksToHighlight.every(link => link.isLink())) {
             throw new TypeError("Please provide an array of links.");
         }
 

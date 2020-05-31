@@ -75,6 +75,7 @@ html, body {
 
 .joint-type-dialogue-set rect:not(.magnet),
 .joint-type-dialogue-branch rect:not(.magnet),
+.joint-type-dialogue-scene rect:not(.magnet),
 .joint-type-dialogue-note rect:not(.magnet) {
 	/* Choice and text are set elsewhere */
    fill: #101219;
@@ -316,7 +317,6 @@ span.plus {
 	justify-content: space-around;
 	align-items: center;
 	padding: 10px 0px; /* Padding at top and bottom */
-
 }
 
 .node.set button.delete{

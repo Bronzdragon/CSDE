@@ -66,10 +66,11 @@ var csde = (function csdeMaster(){
             'base':   { width: 250, height: 150 },
             'text':   { width: 500, height: 200 },
             'set':    { width: 250, height: 100 },
-            'note':    { width: 400, height: 100 },
+            'note':   { width: 400, height: 100 },
+            'scene':  { width: 400, height: 100 },
             'multi':  { width: 300, height: 150, section: 50 },
             'choice': { width: 500, height: 200, section: 50 },
-            'branch': { width: 250, height: 200, section: 50 }
+            'branch': { width: 250, height: 200, section: 50 },
         },
         icon: {
             width:  15,
@@ -711,13 +712,67 @@ var csde = (function csdeMaster(){
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
             this.model.resize(this.$box.$note.outerWidth() + this.padding * 2,
                 this.$box.$note.outerHeight() + this.padding *2);
-
-            this.$box.$note.text(this.model.get('noteText'));
-            this.$box.$note.trigger('keydown');
         },
 
-        addMagnets: function() { /* Do nothing */ }
+        addMagnets: function() { /* Do nothing, we don't want magnets*/ }
     });
+
+    joint.shapes.dialogue.Base.define('dialogue.Scene', {
+        size: { ..._style.node.scene },
+        url: ''
+    });
+    joint.shapes.dialogue.SceneView = joint.shapes.dialogue.BaseView.extend({
+        template:`
+            <div class="node scene">
+                <button class="delete">x</button>
+                <input type="text" placeholder="...">
+            </div>`,
+        initialize() {
+            joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
+
+            this.$box.$url = this.$box.find("input");
+
+            this.$box.on("dblclick", function (event) {
+                console.log("Open the file!")
+                // event.preventDefault();
+                const url = this.model.get("url");
+                saveFileAs(path.format({
+                    dir: process.cwd(),
+                    name: "old", // TODO: Save current file name.
+                    ext: ".json",
+                }))
+                openFile(path.format({
+                    dir: process.cwd(),
+                    name: url,
+                    ext: ".json",
+                }));
+            })
+
+            this.$box.$url.on("change", event => {
+                this.model.set('url', event.target.value);
+            })
+        },
+        // updateBox(){},
+        addMagnets(){
+            // We only want one (input) magnet
+            if (!this.model.get('input')) {
+                this.model.set("input", {
+                    group: "input",
+                    markup: "<rect />",
+                    attrs: {
+                        rect: {
+                            class: "magnet input left",
+                            magnet: true,
+                            width: _style.magnet.left.width,
+                            height: this.model.get('size').height,
+                            fill: `url(#${_style.gradient.input.left})`
+                        }
+                    }
+    });
+                this.model.addPort(this.model.get('input'));
+            }
+        }
+    })
 
     joint.shapes.dialogue.Multi.define('dialogue.Choice', {
     });
@@ -1000,6 +1055,11 @@ var csde = (function csdeMaster(){
     }
 
     function _CSDEToGraph_CreateNodes(jsonObj, graph) {
+        if (!jsonObj.nodes.length) {
+            // If there are no nodes, do nothing
+            return;
+        }
+
         let node = jsonObj.nodes.pop();
         let newNode = null;
         let values = null;
@@ -1049,10 +1109,12 @@ var csde = (function csdeMaster(){
                     noteText: node.text
                 });
                 break;
+            case "dialogue.Scene": // Scene node
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Scene, node.position, {
+                    id: node.id
+                });
             default:
                 break;
-
-            return newNode;
         }
 
         jsonObj.createdNodes.push(node);
@@ -1149,12 +1211,13 @@ var csde = (function csdeMaster(){
                     break;
                 case "dialogue.Note": /* falls through */
                     node.text = element.get("noteText") || "";
+                case "dialogue.Scene": /* falls through */
                 default:
                     node.outbound = [];
                     break;
             }
 
-            if (["dialogue.Text", "dialogue.Set", "dialogue.Branch", "dialogue.Choice", "dialogue.Note"].includes(node.type)) {
+            if (["dialogue.Text", "dialogue.Set", "dialogue.Branch", "dialogue.Choice", "dialogue.Note", "dialogue.Scene"].includes(node.type)) {
                 nodes.push(node);
             }
         }
@@ -1253,11 +1316,12 @@ var csde = (function csdeMaster(){
             "href": `data:application/json,${encodeURIComponent(JSON.stringify(data))}`,
             "target": "_blank"
         })
-        .hide();
+        .hide()
+        .appendTo($('body'))
+        .click()
+        .remove();
 
-        $('body').append($link);
-        $link[0].click();
-        $link.remove();
+        
     }
 
     function _addContextMenus(element) {
@@ -1277,6 +1341,7 @@ var csde = (function csdeMaster(){
                     case 'Choice':
                     case 'Set':
                     case 'Note':
+                    case 'Scene':
                     case 'Branch':
                     case 'Base':
                     case 'Multi':
@@ -1292,6 +1357,7 @@ var csde = (function csdeMaster(){
                 'Set':    {name: 'Set flag'},
                 'Branch': {name: 'Conditional branch'},
                 'Note':   {name: 'Note'},
+                'Scene':  {name: 'Scene'},
                 'Base':   {name: 'DEBUG - base'},
                 'Multi':  {name: 'DEBUG - multi'},
                 'data': {
@@ -1352,7 +1418,6 @@ var csde = (function csdeMaster(){
                 newElement = new joint.shapes.dialogue[itemKey]({position: pos});
                 _graph.addCell(newElement);
 
-
                 _globalLinkValue.link.target({id: newElement.id, port: newElement.getPorts().find(element => element.group === _globalLinkValue.type).id});
 
                 _globalLinkValue = null;
@@ -1360,7 +1425,8 @@ var csde = (function csdeMaster(){
                 'Text': {name: 'Speech'},
                 'Choice': {name: 'Choice'},
                 'Set': {name: 'Set flag'},
-                'Branch': {name: 'Conditional branch'}
+                'Branch': {name: 'Conditional branch'},
+                'Scene': {name: 'Scene'}
             }
         });
     }

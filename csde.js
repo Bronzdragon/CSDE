@@ -1388,10 +1388,9 @@ var csde = (function csdeMaster(){
     }
 
     function _registerHotkeys(element) {
-        $(window).keypress(event => {
+        $(window).keydown(event => {
             if(event.ctrlKey && event.key === 's'){
                 save();
-
                 event.preventDefault();
             }
         });

@@ -681,7 +681,7 @@ var csde = (function csdeMaster(){
         ports: { groups: { "output": { position: { args: {
             y: _style.node.set.height / 2
         } } } } },
-        userKey: '', // Value to be set later.
+        userKey: '',  // Value to be set later.
         userValue: '' // Value to be set later.
     });
     joint.shapes.dialogue.SetView = joint.shapes.dialogue.BaseView.extend({
@@ -765,7 +765,7 @@ var csde = (function csdeMaster(){
 
     joint.shapes.dialogue.Base.define('dialogue.Scene', {
         size: { ..._style.node.scene },
-        url: ''
+        url: '', // Value to be set later.
     });
     joint.shapes.dialogue.SceneView = joint.shapes.dialogue.BaseView.extend({
         template:`
@@ -790,9 +790,16 @@ var csde = (function csdeMaster(){
 
             this.$box.$url.on("change", event => {
                 this.model.set('url', event.target.value);
+                // console.log("New URL:", this.model.get("url"))
             })
         },
-        // updateBox(){},
+        updateBox(){
+            joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
+
+            if (!this.$box.$url.is(':focus')){
+                this.$box.$url.val(this.model.get('url'))
+            }
+        },
         addMagnets(){
             // We only want one (input) magnet
             if (!this.model.get('input')) {
@@ -1154,7 +1161,8 @@ var csde = (function csdeMaster(){
                 break;
             case "dialogue.Scene": // Scene node
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Scene, node.position, {
-                    id: node.id
+                    id: node.id,
+                    url: node.url
                 });
             default:
                 break;
@@ -1256,9 +1264,10 @@ var csde = (function csdeMaster(){
                     node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), false).map(_remapConnections);
 
                     break;
-                case "dialogue.Note": /* falls through */
+                case "dialogue.Note":
                     node.text = element.get("noteText") || "";
-                case "dialogue.Scene": /* falls through */
+                case "dialogue.Scene":
+                    node.url = element.get("url") || "";
                 default:
                     node.outbound = [];
                     break;

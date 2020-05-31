@@ -707,9 +707,12 @@ var csde = (function csdeMaster(){
             this.$box.$note.css({top: this.padding, left: this.padding, position:'absolute'});
 
             this.$box.$note.autoResize({animate: false, extraSpace: 0, onResize: () => this.updateBox()});
-            this.$box.$note.on('input', event => {
+            this.$box.$note.on('blur', event => {
                 this.model.set('noteText', $(event.target).val());
-            });
+            })
+
+            this.$box.$note.text(this.model.get('noteText'));
+
         },
 
         updateBox: function() {

@@ -51,21 +51,33 @@ var csde = (function csdeMaster(){
         position: { x: 0, y: 0 }
     };
 
-    function openFile(filePath = "") {
+    function openFile(filePath = "", filename = "default.json") {
         _graph.clear()
-        fs.readFile(filePath, (err, data) => {
+        mkdirp.sync(filePath);
+
+        fs.appendFileSync(path.join(filePath, filename), '');
+
+        fs.readFile(path.join(filePath, filename), (err, data) => {
             if (err) {
                 throw err;
             }
-            load(JSON.parse(data));
+            if(data.length){
+                load(JSON.parse(data));
+            } else {
+                _graph.clear();
+                console.log("Setting filename: ", filename);
+                setFileName(filename.slice(0, -5));
+            }
         });
         console.log("Loading file:  ", filePath)
     }
 
-    function saveFileAs(filePath = "") {
+    function saveFileAs(filePath = "", filename = "default.json") {
+        mkdirp.sync(filePath);
+
         const jsonText = JSON.stringify(_graphToCSDE());
         console.log("Saving to: ", filePath, "\nContents: ", jsonText);
-        fs.writeFile(filePath, jsonText, function(err){
+        fs.writeFile(path.join(filePath, filename), jsonText, function(err){
             if(err){
                 throw err;
             }
@@ -771,17 +783,9 @@ var csde = (function csdeMaster(){
                 // event.preventDefault();
 
                 const url = this.model.get("url");
-                saveFileAs(path.format({
-                    dir: process.cwd(),
-                    name: _currentFileName,
-                    ext: ".json",
-                }));
+                saveFileAs(path.join(process.cwd(), "scenes"), _currentFileName + ".json");
 
-                openFile(path.format({
-                    dir: process.cwd(),
-                    name: this.$box.$url.val(),
-                    ext: ".json",
-                }));
+                openFile(path.join(process.cwd(), "scenes"), this.$box.$url.val() + ".json");
             })
 
             this.$box.$url.on("change", event => {
@@ -1699,14 +1703,7 @@ var csde = (function csdeMaster(){
                 return
             }
 
-            const filePath = path.format({
-                dir: process.cwd(),
-                name: _currentFileName,
-                ext: ".json",
-            })
-
-            saveFileAs(filePath);
-            
+            saveFileAs(path.join(process.cwd(), "scenes"), _currentFileName + ".json");
         })
 
         _style.gradient = _createGradients();

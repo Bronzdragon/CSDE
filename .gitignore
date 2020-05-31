@@ -1,8 +1,11 @@
-#avatars (which are project specific)
+# Avatars (which are project specific)
 images/characters.png/*.*
 images/characters.webp/*.*
 images/batch.bat
 images/cwebp.exe
+
+# Project specific files
+scenes/
 
 # Logs
 logs

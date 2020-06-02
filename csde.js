@@ -52,6 +52,8 @@ var csde = (function csdeMaster(){
     };
 
     function openFile(filePath = "", filename = "default.json") {
+        console.log("Scrolling...")
+
         _graph.clear()
         mkdirp.sync(filePath);
 
@@ -65,6 +67,9 @@ var csde = (function csdeMaster(){
                 load(JSON.parse(data));
             } else {
                 _graph.clear();
+                _$container.scrollTop(0);
+                _$container.scrollLeft(0);
+                
                 console.log("Setting filename: ", filename);
                 setFileName(filename.slice(0, -5));
             }
@@ -1796,6 +1801,9 @@ var csde = (function csdeMaster(){
     }
 
     function load(data = null) {
+        _$container.scrollTop(0);
+        _$container.scrollLeft(0);
+
         let handleData = function (jsonObj) {
             notify("Data found, loading...", 'low');
             _CSDEToGraph(jsonObj, _graph);

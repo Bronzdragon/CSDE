@@ -54,8 +54,6 @@ var csde = (function csdeMaster(){
     };
 
     function openFile(filePath = "", filename = "default.json") {
-        console.log("Scrolling...")
-
         _graph.clear()
         mkdirp.sync(filePath);
 
@@ -1528,21 +1526,38 @@ var csde = (function csdeMaster(){
 
             /* Zoom in */
             if(event.ctrlKey && (event.key === '=' || event.key === '+')){
-                webFrame.setZoomFactor(0.1 + webFrame.getZoomFactor());
+                webFrame.setZoomLevel(webFrame.getZoomLevel() + 1);
             }
 
             /* Zoom out */
             if(event.ctrlKey && event.key === '-'){
-                const currentScale = webFrame.getZoomFactor();
-                const minScale = Math.max(currentScale - 0.1, 0.4);
-                webFrame.setZoomFactor(minScale);
+                webFrame.setZoomLevel(webFrame.getZoomLevel() - 1);
+
             }
 
             /* Reset zoom */
             if(event.ctrlKey && event.key === '0'){
-                webFrame.setZoomFactor(0);
+                webFrame.setZoomLevel(0);
             }
         });
+
+        console.log()
+        const scrollHandler = (event, x, y, delta) => {
+            if(event.ctrlKey){
+                // Delta is either -1 or +1, so this works out!
+                webFrame.setZoomLevel(webFrame.getZoomLevel() + delta);
+            }
+        };
+        const scrollCellHandler = (cellView, evt, x, y, delta) => {
+            console.log("Why doens't this work?")
+            if(event.ctrlKey){
+                // Delta is either -1 or +1, so this works out!
+                webFrame.setZoomLevel(webFrame.getZoomLevel() + delta);
+            }
+        };
+
+        _paper.on("cell:mousewheel", scrollCellHandler);
+        _paper.on("blank:mousewheel", scrollHandler);
     }
 
     function _getSafefileName() {

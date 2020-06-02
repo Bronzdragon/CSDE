@@ -7,6 +7,8 @@ if (_isElectron) {
     var os = require('os');
     var path = require('path');
     var mkdirp = require('mkdirp');
+    var {webFrame} = require('electron')
+
 }
 
 var csde = (function csdeMaster(){
@@ -1517,10 +1519,28 @@ var csde = (function csdeMaster(){
     }
 
     function _registerHotkeys(element) {
-        $(window).keydown(event => {
+        $(document).keydown(event => {
+            /* Save */
             if(event.ctrlKey && event.key === 's'){
                 save();
                 event.preventDefault();
+            }
+
+            /* Zoom in */
+            if(event.ctrlKey && (event.key === '=' || event.key === '+')){
+                webFrame.setZoomFactor(0.1 + webFrame.getZoomFactor());
+            }
+
+            /* Zoom out */
+            if(event.ctrlKey && event.key === '-'){
+                const currentScale = webFrame.getZoomFactor();
+                const minScale = Math.max(currentScale - 0.1, 0.4);
+                webFrame.setZoomFactor(minScale);
+            }
+
+            /* Reset zoom */
+            if(event.ctrlKey && event.key === '0'){
+                webFrame.setZoomFactor(0);
             }
         });
     }
@@ -1644,6 +1664,7 @@ var csde = (function csdeMaster(){
             restrictTranslate: true, // Stops elements from being dragged offscreen.
             perpendicularLinks: true, // Seems to do very little
             // markAvailable: true
+            async: true,
         });
 
         _paper.on('link:pointerup', (cellView, evt, x, y) => {

@@ -156,19 +156,13 @@ div.node div.header {
 div.node div.choiceContainer button.remove {
 	height: 100%;
 	width: 24px;
-	background-color: rgb(221, 221, 221);
-	border-bottom-color: rgb(221, 221, 221);
-	border-bottom-style:outset;
-	border-bottom-width: 2px;
-	border-left-color:rgb(221, 221, 221);
-	border-left-style:outset;
-	border-left-width:2px;
-	border-right-color:rgb(221, 221, 221);
-	border-right-style: outset;
-	border-right-width:2px;
-	border-top-color: rgb(221, 221, 221);
-	border-top-style:outset;
-	border-top-width:2px;
+	border-color: white;
+	border-width: 1px;
+	border-style: groove;
+	background-image: url(images/rubbish.svg);
+	background-size: 70%;
+	background-repeat: no-repeat;
+	background-position: center center;
 }
 
 div.node div.choiceContainer input {

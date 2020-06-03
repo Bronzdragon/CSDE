@@ -112,6 +112,7 @@ var csde = (function csdeMaster(){
             'set':    { width: 250, height: 100 },
             'note':   { width: 400, height: 100 },
             'scene':  { width: 400, height: 100 },
+            'start':  { width: 400, height: 100 },
             'multi':  { width: 300, height: 150, section: 50 },
             'choice': { width: 500, height: 200, section: 50 },
             'branch': { width: 250, height: 200, section: 50 },
@@ -310,7 +311,7 @@ var csde = (function csdeMaster(){
 
         choiceTemplate:
             `<div style="height: ${_style.node.multi.section}px;" id="<%= TemplateId %>">` +
-                '<button class="remove">-</button>' +
+                '<button class="remove"></button>' +
                 '<input type="text" class="value" value="<%= templateValue %>">' +
             '</div>',
 
@@ -384,8 +385,6 @@ var csde = (function csdeMaster(){
             $newChoice.$value.on("contextmenu", event => {
                 event.stopPropagation();
             });
-
-
 
             if (!choice.isDefault) {
                 $newChoice.$remove = $newChoice.find('button.remove');
@@ -820,11 +819,46 @@ var csde = (function csdeMaster(){
                             fill: `url(#${_style.gradient.input.left})`
                         }
                     }
-    });
+                });
                 this.model.addPort(this.model.get('input'));
             }
         }
     })
+    
+
+    joint.shapes.dialogue.Base.define('dialogue.Start', {
+        size: { ..._style.node.start },
+        ports: { groups: { "output": { position: { args: {
+            y: 0
+        } } } } },
+    });
+    joint.shapes.dialogue.StartView = joint.shapes.dialogue.BaseView.extend({
+        template:`
+            <div class="node start">
+                <button class="delete">x</button>
+                <div>START!</div>
+                <input type="text" class="scene" placeholder="...">
+            </div>`,
+        addMagnets(){
+            // We only want one (input) magnet
+            if (!this.model.get('output')) {
+                this.model.set("output", {
+                    group: "output",
+                    markup: "<rect />",
+                    attrs: {
+                        rect: {
+                            class: "magnet output left",
+                            magnet: true,
+                            width: _style.magnet.left.width,
+                            height: this.model.get('size').height,
+                            fill: `url(#${_style.gradient.output.left})`
+                        }
+                    }
+                });
+                this.model.addPort(this.model.get('output'));
+            }
+        }
+    });
 
     joint.shapes.dialogue.Multi.define('dialogue.Choice', {
     });
@@ -844,7 +878,7 @@ var csde = (function csdeMaster(){
 
         choiceTemplate:
             `<div style="height: ${_style.node.choice.section}px;" id="<%= TemplateId %>">` +
-                '<button class="remove">-</button>' +
+                '<button class="remove"></button>' +
                 '<input type="text" class="value" value="<%= templateValue %>">' +
             '</div>',
 
@@ -894,7 +928,7 @@ var csde = (function csdeMaster(){
 
         choiceTemplate:
             `<div style="height: ${_style.node.branch.section}px;" id="<%= TemplateId %>">` +
-                '<button class="remove">-</button>' +
+                '<button class="remove"></button>' +
                 '<input type="text" class="value" value="<%= templateValue %>">' +
             '</div>',
 
@@ -1169,6 +1203,10 @@ var csde = (function csdeMaster(){
                     id: node.id,
                     url: node.url
                 });
+            case "dialogue.Start": // Start node
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Start, node.position, {
+                    id: node.id
+                })
             default:
                 break;
         }
@@ -1271,14 +1309,19 @@ var csde = (function csdeMaster(){
                     break;
                 case "dialogue.Note":
                     node.text = element.get("noteText") || "";
+                    node.outbound = [];
+                    break;
                 case "dialogue.Scene":
                     node.url = element.get("url") || "";
+                    node.outbound = [];
+                    break;
+                case "dialogue.Start": // falls through
                 default:
                     node.outbound = [];
                     break;
             }
 
-            if (["dialogue.Text", "dialogue.Set", "dialogue.Branch", "dialogue.Choice", "dialogue.Note", "dialogue.Scene"].includes(node.type)) {
+            if (["dialogue.Text", "dialogue.Set", "dialogue.Branch", "dialogue.Choice", "dialogue.Note", "dialogue.Scene", "dialogue.Start"].includes(node.type)) {
                 nodes.push(node);
             }
         }
@@ -1392,7 +1435,6 @@ var csde = (function csdeMaster(){
             selector: 'div#paper',
             callback: function (itemKey, opt, rootMenu, originalEvent) {
 
-                let type = null;
                 let pos = {
                     x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
                     y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
@@ -1404,6 +1446,7 @@ var csde = (function csdeMaster(){
                     case 'Set':
                     case 'Note':
                     case 'Scene':
+                    case 'Start':
                     case 'Branch':
                     case 'Base':
                     case 'Multi':
@@ -1420,8 +1463,9 @@ var csde = (function csdeMaster(){
                 'Branch': {name: 'Conditional branch'},
                 'Note':   {name: 'Note'},
                 'Scene':  {name: 'Scene'},
-                'Base':   {name: 'DEBUG - base'},
-                'Multi':  {name: 'DEBUG - multi'},
+                'Start':  {name: 'Start'},
+                // 'Base':   {name: 'DEBUG - base'},
+                // 'Multi':  {name: 'DEBUG - multi'},
                 'data': {
                     name: 'Data management',
                     items: {
@@ -1489,7 +1533,8 @@ var csde = (function csdeMaster(){
                 'Choice': {name: 'Choice'},
                 'Set': {name: 'Set flag'},
                 'Branch': {name: 'Conditional branch'},
-                'Scene': {name: 'Scene'}
+                'Scene': {name: 'Scene'},
+                'Start': {name: 'Start'},
             }
         });
     }

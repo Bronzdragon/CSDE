@@ -112,7 +112,7 @@ var csde = (function csdeMaster(){
             'set':    { width: 250, height: 100 },
             'note':   { width: 400, height: 100 },
             'scene':  { width: 400, height: 100 },
-            'start':  { width: 400, height: 100 },
+            'start':  { width: 200, height: 50 },
             'multi':  { width: 300, height: 150, section: 50 },
             'choice': { width: 500, height: 200, section: 50 },
             'branch': { width: 250, height: 200, section: 50 },
@@ -825,19 +825,20 @@ var csde = (function csdeMaster(){
         }
     })
     
-
     joint.shapes.dialogue.Base.define('dialogue.Start', {
         size: { ..._style.node.start },
         ports: { groups: { "output": { position: { args: {
+            x: _style.node.start.width - _style.magnet.right.width,
             y: 0
+
         } } } } },
     });
     joint.shapes.dialogue.StartView = joint.shapes.dialogue.BaseView.extend({
         template:`
             <div class="node start">
                 <button class="delete">x</button>
-                <div>START!</div>
-                <input type="text" class="scene" placeholder="...">
+                <div>❯❯❯❯❯</div>
+                <!--input type="text" class="scene" placeholder="..." -->
             </div>`,
         addMagnets(){
             // We only want one (input) magnet
@@ -847,11 +848,11 @@ var csde = (function csdeMaster(){
                     markup: "<rect />",
                     attrs: {
                         rect: {
-                            class: "magnet output left",
+                            class: "magnet output right",
                             magnet: true,
-                            width: _style.magnet.left.width,
+                            width: _style.magnet.right.width,
                             height: this.model.get('size').height,
-                            fill: `url(#${_style.gradient.output.left})`
+                            fill: `url(#${_style.gradient.output.right})`
                         }
                     }
                 });

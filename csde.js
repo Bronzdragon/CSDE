@@ -1528,16 +1528,16 @@ var csde = (function csdeMaster(){
             }
         });
 
-        // Connector dragg-off menu.
+        // Connector drag-off menu.
         $.contextMenu({
             selector: 'div#drop-menu',
             callback: function (itemKey, opt, rootMenu, originalEvent) {
-                let pos = {
+                let position = {
                     x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
                     y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize
                 };
 
-                newElement = new joint.shapes.dialogue[itemKey]({position: pos});
+                newElement = new joint.shapes.dialogue[itemKey]({position});
                 _graph.addCell(newElement);
 
                 _globalLinkValue.link.target({id: newElement.id, port: newElement.getPorts().find(element => element.group === _globalLinkValue.type).id});
@@ -1745,16 +1745,16 @@ var csde = (function csdeMaster(){
         _paper.on('link:pointerup', (cellView, evt, x, y) => {
             if(cellView.model.getTargetElement()) return; // If there is a target, we're not interested.
 
-            let link = cellView.model;
-            let portId = link.source().port;
-            let origin = link.getSourceElement();
-            let originType = origin.getPort(portId).group;
+            const link = cellView.model;
+            const portId = link.source().port;
+            const origin = link.getSourceElement();
+            const originType = origin.getPort(portId).group;
 
             _globalLinkValue = {
                 link: cellView.model,
                 type: (originType === "output" ? "input" : "output") // invert the type we should connect to.
             };
-            $('div#drop-menu').contextMenu({x: x, y: y});
+            $('div#drop-menu').contextMenu({x: x, y: y - _$container.scrollTop()});
         });
 
         _graph.on('change:position add', function(cell) {

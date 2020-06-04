@@ -1,14 +1,23 @@
 /* jshint esversion: 6 */
-const {app, BrowserWindow} = require('electron');
-require('electron-debug')();
+const {
+    app,
+    BrowserWindow
+} = require('electron');
+// require('electron-debug')();
 
 let mainWindow = null;
 
 function createWindow() {
-    mainWindow = new BrowserWindow({ width: 800, height: 600 });
+    mainWindow = new BrowserWindow({
+        // width: 800, height: 600,
+        webPreferences: {
+            spellcheck: true,
+            nodeIntegration: true,
+        }
+    });
     mainWindow.setBackgroundColor("#222");
 
-    mainWindow.setMenu(null);
+    // mainWindow.setMenu(null);
     mainWindow.loadFile('./index.html');
 
     mainWindow.on('closed', () => {
@@ -19,7 +28,7 @@ function createWindow() {
 app.on('ready', createWindow);
 
 app.on('window-all-closed', () => {
-    if(process.platform !== 'darwin'){
+    if (process.platform !== 'darwin') {
         app.quit();
     }
 });

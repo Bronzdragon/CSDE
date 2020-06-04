@@ -1286,27 +1286,37 @@ var csde = (function csdeMaster(){
                 case "dialogue.Text":
                     node.actor = element.get("actor") || "unknown";
                     node.text = element.get("speech") || "";
-
-                    ports = [{id: element.getPorts().find(port => port.group === "output").id, text: "output"}];
-                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), false).map(_remapConnections);
+                    ports = [{
+                        id: element.getPorts().find(port => port.group === "output").id,
+                        text: "output"
+                    }];
                     break;
                 case "dialogue.Set":
                     node.key = element.get("userKey") || "";
                     node.value = element.get("userValue") || "";
-
-                    ports = [{id: element.getPorts().find(port => port.group === "output").id, text: "output"}];
-                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), false).map(_remapConnections);
+                    ports = [{
+                        id: element.getPorts().find(port => port.group === "output").id,
+                        text: "output"
+                    }];
                     break;
                 case "dialogue.Branch":
                     node.key = element.get("userKey") || "";
-
-                    ports = element.get("values").map(port => ({id: port.id, text: port.value}));
-                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), false).map(_remapConnections);
+                    ports = element.get("values").map(({id, value}) => ({
+                        id: id,
+                        text: value
+                    }));
                     break;
                 case "dialogue.Choice":
-                    ports = ports = element.get("values").map(port => ({id: port.id, text: port.value}));
-                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), false).map(_remapConnections);
-
+                    ports = element.get("values").map(({id, value}) => ({
+                        id: id,
+                        text: value
+                    }));
+                    break;
+                case "dialogue.Start": // falls through
+                    ports = [{
+                        id: element.getPorts().find(port => port.group === "output").id,
+                        text: "output"
+                    }];
                     break;
                 case "dialogue.Note":
                     node.text = element.get("noteText") || "";
@@ -1316,10 +1326,14 @@ var csde = (function csdeMaster(){
                     node.url = element.get("url") || "";
                     node.outbound = [];
                     break;
-                case "dialogue.Start": // falls through
                 default:
                     node.outbound = [];
                     break;
+            }
+
+            if (["dialogue.Text", "dialogue.Set", "dialogue.Branch", "dialogue.Choice", "dialogue.Start"].includes(node.type)) {
+                /* All these nodes have this in common */
+                node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), false).map(_remapConnections);
             }
 
             if (["dialogue.Text", "dialogue.Set", "dialogue.Branch", "dialogue.Choice", "dialogue.Note", "dialogue.Scene", "dialogue.Start"].includes(node.type)) {

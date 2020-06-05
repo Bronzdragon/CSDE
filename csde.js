@@ -54,7 +54,7 @@ var csde = (function csdeMaster(){
     };
 
     function openFile(filePath = "", filename = "default.json") {
-        _graph.clear()
+        _openBlankGraph(false)
         mkdirp.sync(filePath);
 
         fs.appendFileSync(path.join(filePath, filename), '');
@@ -66,7 +66,7 @@ var csde = (function csdeMaster(){
             if(data.length){
                 load(JSON.parse(data));
             } else {
-                _graph.clear();
+                _openBlankGraph(true);
                 _$container.scrollTop(0);
                 _$container.scrollLeft(0);
                 
@@ -92,6 +92,11 @@ var csde = (function csdeMaster(){
     function setFileName(name) {
         _currentFileName = name;
         $("input#filename-textbox").val(name);
+    }
+
+    function _openBlankGraph(startNode = true) {
+        _graph.clear();
+        _addNodeToGraph(joint.shapes.dialogue.Start, {x: 100, y: 100});
     }
 
     const _defaultLink = new joint.dia.Link({
@@ -1521,7 +1526,7 @@ var csde = (function csdeMaster(){
                             callback: _exportUVNP
                         },'new': {
                             name: 'Open blank file',
-                            callback: () => _graph.clear()
+                            callback: _openBlankGraph
                         }
                     }
                 }

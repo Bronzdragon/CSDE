@@ -1748,7 +1748,7 @@ var csde = (function csdeMaster(){
         });
 
         _paper.on('link:pointerup', (cellView, evt, x, y) => {
-            if(cellView.model.getTargetElement()) return; // If there is a target, we're not interested.
+            if (cellView.model.getTargetElement()) return; // If there is a target, we're not interested.
 
             const link = cellView.model;
             const portId = link.source().port;
@@ -1759,7 +1759,10 @@ var csde = (function csdeMaster(){
                 link: cellView.model,
                 type: (originType === "output" ? "input" : "output") // invert the type we should connect to.
             };
-            $('div#drop-menu').contextMenu({x: x, y: y - _$container.scrollTop()});
+            $('div#drop-menu').contextMenu({
+                x: x - _$container.scrollLeft(),
+                y: y - _$container.scrollTop(),
+            });
         });
 
         _graph.on('change:position add', function(cell) {

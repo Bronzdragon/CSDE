@@ -77,7 +77,7 @@ var csde = (function csdeMaster(){
         console.log("Loading file:  ", filePath)
     }
 
-    function saveFileAs(filePath = "", filename = "default.json") {
+    function _saveFileAs(filePath = "", filename = "default.json") {
         mkdirp.sync(filePath);
 
         const jsonText = JSON.stringify(_graphToCSDE());
@@ -792,7 +792,8 @@ var csde = (function csdeMaster(){
                 // event.preventDefault();
 
                 const url = this.model.get("url");
-                saveFileAs(path.join(process.cwd(), "scenes"), _currentFileName + ".json");
+                save();
+                // _saveFileAs(path.join(process.cwd(), "scenes"), _currentFileName + ".json");
 
                 openFile(path.join(process.cwd(), "scenes"), this.$box.$url.val() + ".json");
             })
@@ -1588,7 +1589,7 @@ var csde = (function csdeMaster(){
                 save();
                 event.preventDefault();
             }
-
+            
             /* Zoom in */
             if(event.ctrlKey && (event.key === '=' || event.key === '+')){
                 webFrame.setZoomLevel(webFrame.getZoomLevel() + 1);
@@ -1606,7 +1607,6 @@ var csde = (function csdeMaster(){
             }
         });
 
-        console.log()
         const scrollHandler = (event, x, y, delta) => {
             if(event.ctrlKey){
                 // Delta is either -1 or +1, so this works out!
@@ -1625,8 +1625,13 @@ var csde = (function csdeMaster(){
         _paper.on("blank:mousewheel", scrollHandler);
     }
 
-    function _getSafefileName() {
-        return "csde.json";
+    function _getSafefileName(randomized = false) {
+        if(randomized){
+            return `csde-${_generateId(6, "")}.json`;
+        } else {
+            return `csde.json`;
+
+        }
     }
 
     function _getSafefileLocation(filename = '') {
@@ -1741,7 +1746,7 @@ var csde = (function csdeMaster(){
             validateConnection: _validateConnection,
             validateMagnet: _validateMagnet,
             snapLinks: { radius: 100 }, // How many pixels away should a link 'snap'?
-            restrictTranslate: true, // Stops elements from being dragged offscreen.
+            restrictTranslate: false, // Stops elements from being dragged offscreen.
             perpendicularLinks: true, // Seems to do very little
             // markAvailable: true
             async: true,
@@ -1807,6 +1812,9 @@ var csde = (function csdeMaster(){
             let file = event.originalEvent.dataTransfer.files[0]; // We're only intersted in one file.
             _handleFile(file);
         });
+        _$container.$paper.on('cell:pointerclick', function(cellView) {
+            cellView.highlight();
+        });
 
         const filenameElement = $("#filename-textbox")
         const filenameButtonElement = $("#filename-button")
@@ -1816,12 +1824,13 @@ var csde = (function csdeMaster(){
         })
 
         filenameButtonElement.on('click', event => {
-            if(!filenameElement.val()){
-                save();
-                return
-            }
+            save();
+            // if(!filenameElement.val()){
+            //     save();
+            //     return
+            // }
 
-            saveFileAs(path.join(process.cwd(), "scenes"), _currentFileName + ".json");
+            // _saveFileAs(path.join(process.cwd(), "scenes"), _currentFileName + ".json");
         })
 
         _style.gradient = _createGradients();
@@ -1889,14 +1898,21 @@ var csde = (function csdeMaster(){
     }
 
     function save() {
-        let json = _graphToCSDE();
+        const json = _graphToCSDE();
+
         if (_isElectron) {
-            mkdirp(_getSafefileLocation(), err => {
-                if (err) throw err;
-            });
-            fs.writeFile(_getSafefileLocation(_getSafefileName()), JSON.stringify(json), 'utf8', err => {
-                if (err) throw err;
-            });
+            // Save it in our backup directory ...
+            _saveFileAs(_getSafefileLocation(), _getSafefileName(false) + ".json");
+
+            // ... save it in our auto-open location ...
+            _saveFileAs(_getSafefileLocation(), _getSafefileName(true) + ".json");
+
+            // ... and save it to our scene list if it's got a name.
+            if(!_currentFileName){
+                notify("You haven't set a file name!", "high");
+            } else {
+                _saveFileAs(path.join(process.cwd(), "scenes"), _currentFileName + ".json");
+            }
         } else {
             localStorage.setItem(_getSafefileName(), JSON.stringify(json));
         }

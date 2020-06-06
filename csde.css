@@ -79,6 +79,11 @@ body {
 	bottom: 20px;
 }
 
+#notifications .prio-high{
+	color: red;
+	text-emphasis: bold;
+}
+
 #filename {
 	position: fixed;
 	left: 20px;

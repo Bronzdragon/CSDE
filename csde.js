@@ -642,7 +642,9 @@ var csde = (function csdeMaster(){
 
             this.$box.$speech.keydown(event => { // Character name switching code.
                 // Using keydown instead of keypress, because it doesn't work correctly in Google Chrome
-                if (!event.altKey) return;
+                if(!event.altKey && (settings["treat-altgr-as-alt"] || !event.ctrlKey))
+                    return;
+
 
                 let options = _characters.map(element => element.name);
 

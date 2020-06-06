@@ -1,5 +1,6 @@
 {
     "scene-folder": "scenes",
     "auto-save-interval": 60,
-    "backup-count": 100
+    "backup-count": 100,
+    "treat-altgr-as-alt": true
 }

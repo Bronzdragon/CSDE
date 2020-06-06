@@ -7,19 +7,19 @@ if (_isElectron) {
     var os = require('os');
     var path = require('path');
     var mkdirp = require('mkdirp');
-    var {webFrame} = require('electron')
-
+    var {webFrame} = require('electron');
+    var settings = require('./settings.json');
 }
 
 var csde = (function csdeMaster(){
     let _currentFileName = null;
     class Autosaver{
-        constructor(interval = 60 * 1000) {
+        constructor(interval = settings["auto-save-interval"] * 1000) {
             this._interval = interval;
             this._timeoutId = null;
         }
 
-        get interval() {return this._interval;}
+        get interval() { return this._interval; }
         set interval(newInterval) {
             newInterval = Number(newInterval);
             if (newInterval < 1) { throw new TypeError("Invalid number, must be positive"); }
@@ -27,13 +27,13 @@ var csde = (function csdeMaster(){
         }
 
         start () {
-            if (this.timeoutId) this.stop();
-            this.timeoutId = window.setTimeout(() => this._autosave(), this._interval);
+            if (this._timeoutId) this.stop();
+            this._timeoutId = window.setTimeout(() => this._autosave(), this._interval);
         }
 
         stop () {
-            window.clearTimeout(this.timeoutId);
-            this.timeoutId = null;
+            window.clearTimeout(this._timeoutId);
+            this._timeoutId = null;
         }
 
         _autosave() {
@@ -81,12 +81,34 @@ var csde = (function csdeMaster(){
         mkdirp.sync(filePath);
 
         const jsonText = JSON.stringify(_graphToCSDE());
-        console.log("Saving to: ", filePath, "\nContents: ", jsonText);
+        // console.log("Saving to: ", filePath, "\nContents: ", jsonText);
         fs.writeFile(path.join(filePath, filename), jsonText, function(err){
             if(err){
                 throw err;
             }
         })
+    }
+
+    // Removes the oldest files in a folder, keeping upto a specific count.
+    async function removeAllButNewestFiles(folder, count = settings["backup-count"]) {
+        console.log("Reading the directory:", folder)
+        fs.readdir(folder, {withFileTypes: true}, (err, files) => {
+            if(err) throw err;
+
+            console.log("Found the files: ", files)
+            const sortedFiles = files
+                .filter(file => file.isFile())
+                .map(file => file.name)
+                .map(fileName => ({ fileName, ...fs.statSync(path.join(folder, fileName))}))
+                .sort((a, b) => b.ctime - a.ctime);
+
+
+            for (const file of sortedFiles.slice(count)) {
+                fs.unlink(path.join(folder, file.fileName), err =>{
+                    if (err) throw err;
+                })
+            }
+        });
     }
 
     function setFileName(name) {
@@ -789,18 +811,15 @@ var csde = (function csdeMaster(){
 
             this.$box.on("dblclick", (event) => {
                 console.log("Open the file!")
-                // event.preventDefault();
 
                 const url = this.model.get("url");
                 save();
-                // _saveFileAs(path.join(process.cwd(), "scenes"), _currentFileName + ".json");
 
-                openFile(path.join(process.cwd(), "scenes"), this.$box.$url.val() + ".json");
+                openFile(path.join(process.cwd(), settings["scene-folder"]), this.$box.$url.val() + ".json");
             })
 
             this.$box.$url.on("change", event => {
                 this.model.set('url', event.target.value);
-                // console.log("New URL:", this.model.get("url"))
             })
         },
         updateBox(){
@@ -1823,15 +1842,7 @@ var csde = (function csdeMaster(){
             setFileName(event.target.value)
         })
 
-        filenameButtonElement.on('click', event => {
-            save();
-            // if(!filenameElement.val()){
-            //     save();
-            //     return
-            // }
-
-            // _saveFileAs(path.join(process.cwd(), "scenes"), _currentFileName + ".json");
-        })
+        filenameButtonElement.on('click', save);
 
         _style.gradient = _createGradients();
 
@@ -1901,17 +1912,22 @@ var csde = (function csdeMaster(){
         const json = _graphToCSDE();
 
         if (_isElectron) {
+
+            const directory = _getSafefileLocation();
             // Save it in our backup directory ...
-            _saveFileAs(_getSafefileLocation(), _getSafefileName(false) + ".json");
+            _saveFileAs(directory, _getSafefileName(true));
 
             // ... save it in our auto-open location ...
-            _saveFileAs(_getSafefileLocation(), _getSafefileName(true) + ".json");
+            _saveFileAs(directory, _getSafefileName(false));
+
+            console.log("Removing old files.")
+            removeAllButNewestFiles(directory);
 
             // ... and save it to our scene list if it's got a name.
             if(!_currentFileName){
                 notify("You haven't set a file name!", "high");
             } else {
-                _saveFileAs(path.join(process.cwd(), "scenes"), _currentFileName + ".json");
+                _saveFileAs(path.join(process.cwd(), settings["scene-folder"]), _currentFileName + ".json");
             }
         } else {
             localStorage.setItem(_getSafefileName(), JSON.stringify(json));

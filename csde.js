@@ -81,7 +81,7 @@ var csde = (function csdeMaster(){
         mkdirp.sync(filePath);
 
         const jsonText = JSON.stringify(_graphToCSDE());
-        // console.log("Saving to: ", filePath, "\nContents: ", jsonText);
+
         fs.writeFile(path.join(filePath, filename), jsonText, function(err){
             if(err){
                 throw err;
@@ -117,8 +117,11 @@ var csde = (function csdeMaster(){
     }
 
     function _openBlankGraph(startNode = true) {
+        setFileName("");
         _graph.clear();
-        _addNodeToGraph(joint.shapes.dialogue.Start, {x: 100, y: 100});
+        if(startNode){
+            _addNodeToGraph(joint.shapes.dialogue.Start, {x: 100, y: 100});
+        }
     }
 
     const _defaultLink = new joint.dia.Link({
@@ -151,6 +154,7 @@ var csde = (function csdeMaster(){
     };
 
     let _highlightedLinks = [];
+    let _selectedNodes = [];
 
     const _linkHighlightClass = {
         highlighter: {
@@ -812,12 +816,10 @@ var csde = (function csdeMaster(){
             this.$box.$url = this.$box.find("input");
 
             this.$box.on("dblclick", (event) => {
-                console.log("Open the file!")
-
-                const url = this.model.get("url");
+                const url = this.$box.$url.val() 
                 save();
 
-                openFile(path.join(process.cwd(), settings["scene-folder"]), this.$box.$url.val() + ".json");
+                openFile(path.join(process.cwd(), settings["scene-folder"]), `${url}.json`);
             })
 
             this.$box.$url.on("change", event => {
@@ -1160,7 +1162,6 @@ var csde = (function csdeMaster(){
         //graph.clear();
 
         console.log(`\tVersion: ${jsonObj.version}`);
-        //console.log("Loading new node: ", node);
 
         console.log(`\tTitle: ${jsonObj.title}`);
         setFileName(jsonObj.title)
@@ -1168,7 +1169,6 @@ var csde = (function csdeMaster(){
         jsonObj.createdNodes = [];
         _CSDEToGraph_CreateNodes(jsonObj, graph);
         // will link into createLinks as well.
-
     }
 
     function _CSDEToGraph_CreateNodes(jsonObj, graph) {
@@ -1635,7 +1635,6 @@ var csde = (function csdeMaster(){
             }
         };
         const scrollCellHandler = (cellView, evt, x, y, delta) => {
-            console.log("Why doens't this work?")
             if(event.ctrlKey){
                 // Delta is either -1 or +1, so this works out!
                 webFrame.setZoomLevel(webFrame.getZoomLevel() + delta);
@@ -1740,6 +1739,27 @@ var csde = (function csdeMaster(){
             }
         }
         _highlightedLinks = _highlightedLinks.concat(linksToHighlight);
+    }
+
+    function _clearSelection() {
+        for (const node of _selectedNodes) {
+            const view = node.findView(_paper);
+            view.removeClass("selected");
+        }
+        _selectedNodes = [];
+    }
+
+    function _selectNodes(nodesToSelect) {
+        if(!Array.isArray(nodesToSelect) || nodesToSelect.every(node => node.isElement())){
+            throw new TypeError("Error: Expected an array of elements.");
+        }
+
+        for (const node of nodesToSelect) {
+            const view = node.findView(_paper);
+            view.addClass("selected");
+        }
+
+        _selectedNodes.push(...nodesToSelect);
     }
 
     function initialize(baseElement, {width = 800, height = 600} = {}) {
@@ -1922,7 +1942,7 @@ var csde = (function csdeMaster(){
             // ... save it in our auto-open location ...
             _saveFileAs(directory, _getSafefileName(false));
 
-            console.log("Removing old files.")
+            // ... clean up our save-cache ...
             removeAllButNewestFiles(directory);
 
             // ... and save it to our scene list if it's got a name.

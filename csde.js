@@ -13,25 +13,29 @@ if (_isElectron) {
 
 var csde = (function csdeMaster(){
     let _currentFileName = null;
-    class Autosaver{
+    class Autosaver {
         constructor(interval = settings["auto-save-interval"] * 1000) {
             this._interval = interval;
             this._timeoutId = null;
         }
 
-        get interval() { return this._interval; }
+        get interval() {
+            return this._interval;
+        }
         set interval(newInterval) {
             newInterval = Number(newInterval);
-            if (newInterval < 1) { throw new TypeError("Invalid number, must be positive"); }
+            if (newInterval < 1) {
+                throw new TypeError("Invalid number, must be positive");
+            }
             this._interval = newInterval;
         }
 
-        start () {
+        start() {
             if (this._timeoutId) this.stop();
             this._timeoutId = window.setTimeout(() => this._autosave(), this._interval);
         }
 
-        stop () {
+        stop() {
             window.clearTimeout(this._timeoutId);
             this._timeoutId = null;
         }
@@ -92,22 +96,29 @@ var csde = (function csdeMaster(){
     // Removes the oldest files in a folder, keeping upto a specific count.
     async function removeAllButNewestFiles(folder, count = settings["backup-count"]) {
         console.log("Reading the directory:", folder)
-        fs.readdir(folder, {withFileTypes: true}, (err, files) => {
-            if(err) throw err;
+        fs.readdir(folder, {
+            withFileTypes: true
+        }, (err, files) => {
+            if (err) throw err;
 
             console.log("Found the files: ", files)
             const sortedFiles = files
                 .filter(file => file.isFile())
                 .map(file => file.name)
-                .map(fileName => ({ fileName, ...fs.statSync(path.join(folder, fileName))}))
+                .filter(fileName => (/csde-[a-w0-9]{6}\.json/).test(fileName))
+                .map(fileName => ({
+                    fileName,
+                    ...fs.statSync(path.join(folder, fileName))
+                }))
                 .sort((a, b) => b.ctime - a.ctime);
 
 
             for (const file of sortedFiles.slice(count)) {
-                fs.unlink(path.join(folder, file.fileName), err =>{
+                fs.unlink(path.join(folder, file.fileName), err => {
                     if (err) throw err;
                 })
             }
+            return true;
         });
     }
 
@@ -1548,7 +1559,7 @@ var csde = (function csdeMaster(){
                             callback: _exportUVNP
                         },'new': {
                             name: 'Open blank file',
-                            callback: _openBlankGraph
+                            callback: _openBlankGraph.bind(null, true)
                         }
                     }
                 }

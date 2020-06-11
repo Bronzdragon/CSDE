@@ -4,6 +4,9 @@ const {
     BrowserWindow
 } = require('electron');
 // require('electron-debug')();
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 let mainWindow = null;
 
@@ -38,3 +41,18 @@ app.on('activate', () => {
         createWindow();
     }
 });
+
+app.on('quit', (event, exitCode) => {
+    const { recybleBinFolderName } = require('./settings.json');
+    const trashPath = path.join(os.homedir(), ".csde", recybleBinFolderName);
+
+    fs.rmdir(trashPath, {recursive: true}, err => {
+        if(err) throw err;
+
+        fs.mkdir(trashPath, err => {
+            if(err) throw err;
+        });
+    });
+
+    //TODO: Delete user folder (yes, all of it).
+})

@@ -2,138 +2,218 @@
 let _userAgent = navigator.userAgent.toLowerCase();
 let _isElectron = _userAgent.indexOf(' electron/') > -1;
 
-if (_isElectron) {
-    var fs = require('fs');
-    var os = require('os');
-    var path = require('path');
-    var mkdirp = require('mkdirp');
-    var {webFrame} = require('electron');
-    var settings = require('./settings.json');
-}
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const mkdirp = require('mkdirp');
+const { webFrame } = require('electron');
+const { dialog } = require('electron').remote
+const SETTINGS = require('./settings.json');
+const Autosaver = require('./modules/autosave')
+
 
 var csde = (function csdeMaster(){
-    let _currentFileName = null;
-    class Autosaver {
-        constructor(interval = settings["auto-save-interval"] * 1000) {
-            this._interval = interval;
-            this._timeoutId = null;
-        }
-
-        get interval() {
-            return this._interval;
-        }
-        set interval(newInterval) {
-            newInterval = Number(newInterval);
-            if (newInterval < 1) {
-                throw new TypeError("Invalid number, must be positive");
-            }
-            this._interval = newInterval;
-        }
-
-        start() {
-            if (this._timeoutId) this.stop();
-            this._timeoutId = window.setTimeout(() => this._autosave(), this._interval);
-        }
-
-        stop() {
-            window.clearTimeout(this._timeoutId);
-            this._timeoutId = null;
-        }
-
-        _autosave() {
-            save();
-            this.start();
-        }
-    }
+    const RECYCLE_BIN_NAME = SETTINGS.recybleBinFolderName
+    let _currentSceneName = '';
 
     let _globalLinkValue = null;
     let _$container = null;
     let _graph = null;
     let _paper = null;
-    let autosave = new Autosaver();
+    let autosave = new Autosaver(SETTINGS.autoSaveInterval, _saveBackups);
     let _characters = resetCharacters();
     let _mouseObj = {
         panning: false,
         position: { x: 0, y: 0 }
     };
 
-    function openFile(filePath = "", filename = "default.json") {
-        _openBlankGraph(false)
-        mkdirp.sync(filePath);
+    async function _saveBackups(backupScene = false) {
+        const backupLocation = _getSavefileLocation();
+        const dataObj = _graphToCSDE()
+        const dataText = JSON.stringify(dataObj);
+        
+        // 1: Make Back-up save.
+        const backupFileName = _getSavefileName(true);
+        await _writeToFile(backupLocation, backupFileName, dataText);
 
-        fs.appendFileSync(path.join(filePath, filename), '');
+        // 2: Save to auto-open file.
+        const autoOpenFileName = _getSavefileName(false);
+        await _writeToFile(backupLocation, autoOpenFileName, dataText);
 
-        fs.readFile(path.join(filePath, filename), (err, data) => {
-            if (err) {
-                throw err;
-            }
-            if(data.length){
-                load(JSON.parse(data));
-            } else {
-                _openBlankGraph(true);
-                _$container.scrollTop(0);
-                _$container.scrollLeft(0);
-                
-                console.log("Setting filename: ", filename);
-                setFileName(filename.slice(0, -5));
-            }
-        });
-        console.log("Loading file:  ", filePath)
+        // 3: Backup the scenes (if required).
+        if(backupScene){
+            _saveScene(dataObj);
+        }
+
+        // 4: Move old back-ups (if any).
+        await _trashOldFiles(backupLocation, SETTINGS.backupCount);
+
+        // 5: Notification
+        notify("Saved...", "low")
     }
 
-    function _saveFileAs(filePath = "", filename = "default.json") {
-        mkdirp.sync(filePath);
+    async function _saveScene(dataObject) {
+        console.log("SaveScenes called...")
+        const sceneFolder = path.join(process.cwd(), SETTINGS.sceneFolder);
+        const dataText = JSON.stringify(dataObject);
+        const { title }  = dataObject
 
-        const jsonText = JSON.stringify(_graphToCSDE());
+        console.log(`About to check if ${title}${SETTINGS.fileExtension} exists...`)
 
-        fs.writeFile(path.join(filePath, filename), jsonText, function(err){
-            if(err){
-                throw err;
-            }
+        // 1: Move the current scene file to a back-up location (if it exists).
+        if(await _fileExists(path.join(sceneFolder, `${title}${SETTINGS.fileExtension}`))){
+            console.log("Found! Moving...")
+            await _moveFile(sceneFolder, path.join(sceneFolder, RECYCLE_BIN_NAME), `${title}${SETTINGS.fileExtension}`, `${title}-${_generateId(6, '')}${SETTINGS.fileExtension}`)
+            console.log("Moved!")
+        } else {
+            console.log("Not found. That's fine.")
+        }
+
+        console.log("Ok, going to write out our file: ", {folder: sceneFolder, name: `${title}${SETTINGS.fileExtension}`});
+        // 2: Now save our current scene
+        await _writeToFile(sceneFolder, `${title}${SETTINGS.fileExtension}`, dataText);
+    }
+
+    async function _createOrOpenScene(sceneName) {
+        if(await _fileExists(path.join(process.cwd(), SETTINGS.sceneFolder, `${sceneName}${SETTINGS.fileExtension}`))){
+            _loadFile(path.join(process.cwd(), SETTINGS.sceneFolder, `${sceneName}${SETTINGS.fileExtension}`))
+        } else {
+            _clearGraph()
+
+            _setSceneName(sceneName);
+
+            _saveScene(_graphToCSDE());
+        }
+    }
+
+    async function _exportToFile(exportLocation, fileName, dataText) {
+        // 1: Create back-ups first
+        await _saveBackups();
+
+        // 2: Export
+        await _writeToFile(exportLocation, fileName, dataText);
+    }
+
+    async function _loadFile(filePath) {
+        // 1: Create backups.
+        await _saveBackups(false);
+
+        // 2: Empty the graph.
+        _clearGraph();
+
+        // 3: Read the file.
+        const data = await _readFromFile(filePath);
+        if(data){
+            // 4: Generate nodes & links.
+            await _CSDEToGraph(data, _graph);
+        } else {
+            _setSceneName("");
+        }
+    }
+
+    /* Makes directory path if it doesn't exist, and writes a file */
+    function _writeToFile(filePath = "", fileName = "", fileText = "") {
+        return new Promise(async (resolve, reject) => {
+            await mkdirp(filePath);
+
+            fs.writeFile(path.join(filePath, fileName), fileText, err => {
+                if (err) { reject(err) } else { resolve(true) }
+            })
         })
     }
 
-    // Removes the oldest files in a folder, keeping upto a specific count.
-    async function removeAllButNewestFiles(folder, count = settings["backup-count"]) {
-        console.log("Reading the directory:", folder)
-        fs.readdir(folder, {
-            withFileTypes: true
-        }, (err, files) => {
-            if (err) throw err;
+    /* Read a file from disc. */
+    async function _readFromFile(filePath) {
+        return new Promise((resolve, reject) => {
+            fs.readFile(filePath, (err, data) => {
+                if (err) { reject(err) }
 
-            console.log("Found the files: ", files)
-            const sortedFiles = files
-                .filter(file => file.isFile())
-                .map(file => file.name)
-                .filter(fileName => (/csde-[a-w0-9]{6}\.json/).test(fileName))
-                .map(fileName => ({
-                    fileName,
-                    ...fs.statSync(path.join(folder, fileName))
-                }))
-                .sort((a, b) => b.ctime - a.ctime);
+                if(data.length > 0) {
+                    resolve(JSON.parse(data));
+                }
 
-
-            for (const file of sortedFiles.slice(count)) {
-                fs.unlink(path.join(folder, file.fileName), err => {
-                    if (err) throw err;
-                })
-            }
-            return true;
-        });
+                resolve(null);
+            })
+        })
     }
 
-    function setFileName(name) {
-        _currentFileName = name;
-        $("input#filename-textbox").val(name);
+    async function _fileExists(filePath) {
+        return new Promise(resolve => {
+            fs.access(filePath, fs.constants.F_OK | fs.constants.R_OK | fs.constants.W_OK, (err) => {
+                resolve(!err)
+            })
+        })
     }
 
-    function _openBlankGraph(startNode = true) {
-        setFileName("");
+    /* Moves files to a new folder */
+    function _moveFile(oldPath, newPath, oldFileName, newFileName) {
+        if(!newFileName) newFileName = oldFileName;
+
+        return new Promise(async (resolve, reject) => {
+            await mkdirp(newPath);
+
+            fs.rename(path.join(oldPath, oldFileName), path.join(newPath, newFileName), (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(true);
+                }
+            })
+        })
+    }
+
+    /* Searches for old files in a folder and moves them to a backup folder if they exceed count */
+     function _trashOldFiles(folder, count = 0) {
+        if (count <= 0) return;
+
+        console.info(`Cleaning files in '${folder}'.`);
+        return new Promise((resolve, reject) => {
+            fs.readdir(folder, { withFileTypes: true }, async (err, files) => {
+                if (err) {
+                    reject(err)
+                };
+
+                const allFiles = await Promise.all(files
+                    .filter(file => file.isFile()) // Filter out folders
+                    .filter(file => (/csde-[a-v0-9]{6}\.(csde|json)/).test(file.name)) // Filter out everything that doesn't fit
+                    .map(file => new Promise((resolve, reject) => {
+                        fs.stat(path.join(folder, file.name), (err, stats) => {
+                            if (err) {
+                                reject(err)
+                            } else {
+                                resolve({ name: file.name, ...stats })
+                            }
+                        })
+                    }))
+                );
+
+                const filesToMove = allFiles
+                    .sort((a, b) => b.mtime - a.mtime) // sort by newest modification time.
+                    .slice(count) // and slice off the first count
+                    .reverse(); // Move files oldest first, just in case.
+
+                await Promise.all(filesToMove.map(
+                    ({ name }) => _moveFile(folder, path.join(folder, RECYCLE_BIN_NAME), name)
+                ));
+
+                resolve(true);
+            })
+        })
+    }
+
+    function _clearGraph() {
+        _$container.scrollTop(0);
+        _$container.scrollLeft(0);
+
+        _setSceneName("");
         _graph.clear();
-        if(startNode){
-            _addNodeToGraph(joint.shapes.dialogue.Start, {x: 100, y: 100});
-        }
     }
+
+    function _setSceneName(newName) {
+        _currentSceneName = newName;
+        $("input#filename-textbox").val(newName);
+    }
+
 
     const _defaultLink = new joint.dia.Link({
         router:    { name: 'metro' },
@@ -657,7 +737,7 @@ var csde = (function csdeMaster(){
 
             this.$box.$speech.keydown(event => { // Character name switching code.
                 // Using keydown instead of keypress, because it doesn't work correctly in Google Chrome
-                if(!event.altKey && (settings["treat-altgr-as-alt"] || !event.ctrlKey))
+                if(!event.altKey && (SETTINGS.treatAltgrAsAlt || !event.ctrlKey))
                     return;
 
 
@@ -828,9 +908,8 @@ var csde = (function csdeMaster(){
 
             this.$box.on("dblclick", (event) => {
                 const url = this.$box.$url.val() 
-                save();
 
-                openFile(path.join(process.cwd(), settings["scene-folder"]), `${url}.json`);
+                _createOrOpenScene(url);
             })
 
             this.$box.$url.on("change", event => {
@@ -1168,17 +1247,17 @@ var csde = (function csdeMaster(){
         return outbound;
     }
 
-    function _CSDEToGraph(jsonObj, graph) {
+    async function _CSDEToGraph(jsonObj, graph) {
         notify("Importing CSDE file", "med");
         //graph.clear();
 
         console.log(`\tVersion: ${jsonObj.version}`);
 
         console.log(`\tTitle: ${jsonObj.title}`);
-        setFileName(jsonObj.title)
+        _setSceneName(jsonObj.title)
 
         jsonObj.createdNodes = [];
-        _CSDEToGraph_CreateNodes(jsonObj, graph);
+        return _CSDEToGraph_CreateNodes(jsonObj, graph);
         // will link into createLinks as well.
     }
 
@@ -1249,16 +1328,24 @@ var csde = (function csdeMaster(){
             default:
                 break;
         }
-
+    
         jsonObj.createdNodes.push(node);
-        if (jsonObj.nodes.length > 0) {
-            // If there's more nodes to add to the graph, do so later. This way we don't block this thread.
-            window.setTimeout(_CSDEToGraph_CreateNodes, 0, jsonObj, graph);
-        } else {
-            window.setTimeout(_CSDEToGraph_CreateLinks, 0, jsonObj.createdNodes, graph);
-        }
 
-        return newNode;
+        return new Promise(resolve => {
+            if (jsonObj.nodes.length > 0) {
+                // If there's more nodes to add to the graph, do so later. This way we don't block this thread.
+                window.setImmediate(() => {
+                    _CSDEToGraph_CreateNodes(jsonObj, graph).then(resolve);
+                });
+                // window.setTimeout(_CSDEToGraph_CreateNodes, 0, jsonObj, graph);
+            } else {
+                window.setImmediate(() => {
+                    _CSDEToGraph_CreateLinks(jsonObj.createdNodes, graph).then(resolve);
+                });
+                // window.setTimeout(_CSDEToGraph_CreateLinks, 0, jsonObj.createdNodes, graph);
+            }
+        })
+        // return newNode;
     }
 
     function _CSDEToGraph_CreateLinks(nodelist, graph) {
@@ -1286,21 +1373,25 @@ var csde = (function csdeMaster(){
             graph.addCell(new_link);
         }
 
-        if (nodelist.length > 0) {
-            // If there's more nodes to link, add a todo, so we don't block this thread.
-            window.setTimeout(_CSDEToGraph_CreateLinks, 0, nodelist, graph);
-        } else {
-            notify("CSDE file has been imported.", "med");
-        }
+        return new Promise(resolve => {
+            if (nodelist.length > 0) {
+                window.setImmediate(() => {
+                    _CSDEToGraph_CreateLinks(nodelist, graph).then(resolve);
+                });
+                // If there's more nodes to link, add a todo, so we don't block this thread.
+                // window.setTimeout(_CSDEToGraph_CreateLinks, 0, nodelist, graph);
+            } else {
+                notify("CSDE file has been imported.", "med");
+                resolve(true);
+            }
+        });
     }
 
     function _graphToCSDE() {
-        function _remapConnections(obj) {
-            return ({
-                id: newIds.get(obj.id) || null,
-                text: obj.text
-            });
-        }
+        const _remapConnections = obj => ({
+            id: newIds.get(obj.id) || null,
+            text: obj.text
+        })
 
         let nodes = [];
         var newIds = new Map();
@@ -1381,7 +1472,7 @@ var csde = (function csdeMaster(){
 
         return {
             version: "0.1.1",
-            title: _currentFileName,
+            title: _currentSceneName,
             nodes: nodes
         };
     }
@@ -1455,32 +1546,32 @@ var csde = (function csdeMaster(){
         };
     }
 
-    function _exportCSDE() {
-        notify("Starting export of CSDE file.", "med");
-        _offerAsFile(_graphToCSDE(), "export.csde");
-    }
+    // function _exportCSDE() {
+    //     notify("Starting export of CSDE file.", "med");
+    //     _offerAsFile(_graphToCSDE(), `export${SETTINGS.fileExtension}`);
+    // }
 
-    function _exportUVNP() {
-        notify("Exporting UVNP file.", "med");
-        _offerAsFile(_graphToUVPN(), "export.uvnp");
-    }
+    // function _exportUVNP() {
+    //     notify("Exporting UVNP file.", "med");
+    //     _offerAsFile(_graphToUVPN(), "export.uvnp");
+    // }
 
-    function _offerAsFile(data, filename = "download.json"){
-        if (!data || $.type(filename) !== "string") return;
+    // function _offerAsFile(data, filename = "download.json"){
+    //     if (!data || $.type(filename) !== "string") return;
 
-        let $link = $("<a>").
-        attr({
-            "download": filename,
-            "href": `data:application/json,${encodeURIComponent(JSON.stringify(data))}`,
-            "target": "_blank"
-        })
-        .hide()
-        .appendTo($('body'))
-        .click()
-        .remove();
+    //     let $link = $("<a>")
+    //     .attr({
+    //         "download": filename,
+    //         "href": `data:application/json,${encodeURIComponent(JSON.stringify(data))}`,
+    //         "target": "_blank"
+    //     })
+    //     .hide()
+    //     .appendTo($('body'))
+    //     .click()
+    //     .remove();
         
-        setFileName(filename)
-    }
+    //     _setSceneName(filename)
+    // }
 
     function _addContextMenus(element) {
         // Right click menu.
@@ -1522,7 +1613,7 @@ var csde = (function csdeMaster(){
                 'data': {
                     name: 'Data management',
                     items: {
-                        'import-legacy': {
+                        /*'import-legacy': {
                         name: "Import (legacy)",
                             callback: () => {
                                 let $file = $('<input type="file" accept="application/json,.json" />')
@@ -1538,28 +1629,44 @@ var csde = (function csdeMaster(){
                                 .appendTo("body")
                                 .click();
                             }
-                        }, 'import': {
+                        },*/ 'import': {
                             name: "Import from file",
-                            callback: () => {
-                                let $file = $('<input type="file" accept="application/json,.csde" />')
-                                .hide()
-                                .on('change', function (event) {
-                                    setFileName(this.value.slice(12, -5));
-                                    _handleFile(this.files[0]); // We care about only the first file.
-                                    $file.remove();
-                                })
-                                .appendTo("body")
-                                .click();
+                            callback: async () => {
+                                const result = await dialog.showOpenDialog({properties: ["openFile"]});
+                                if(result.canceled) return;
+                                
+                                const { filePaths: [ filePath ] } = result;
+
+                                _loadFile(filePath);
+                                // let $file = $('<input type="file" accept="application/json,.csde" />')
+                                // .hide()
+                                // .on('change', function (event) {
+                                //     setFileName(this.value.slice(12, -5));
+                                //     _handleFile(this.files[0]); // We care about only the first file.
+                                //     $file.remove();
+                                // })
+                                // .appendTo("body")
+                                // .click();
                             }
                         }, 'export-csde': {
                             name: "Export (CSDE format)",
-                            callback: _exportCSDE
-                        }, 'export-uvnp': {
-                            name: "Export (UVNP format)",
-                            callback: _exportUVNP
-                        },'new': {
+                            callback: async () => {
+                                const result = await dialog.showSaveDialog()
+                                if(result.canceled) return;
+
+                                const { filePath } = result;
+                                const { dir, base } = path.parse(filePath);
+
+                                _exportToFile(dir, base, _graphToCSDE())
+                            }
+                        },
+                        // 'export-uvnp': {
+                        //     name: "Export (UVNP format)",
+                        //     callback: _exportUVNP
+                        // },
+                        'new': {
                             name: 'Open blank file',
-                            callback: _openBlankGraph.bind(null, true)
+                            callback: _clearGraph
                         }
                     }
                 }
@@ -1618,7 +1725,9 @@ var csde = (function csdeMaster(){
         $(document).keydown(event => {
             /* Save */
             if(event.ctrlKey && event.key === 's'){
-                save();
+                const shouldSaveScene = Boolean(_currentSceneName);
+                _saveBackups(shouldSaveScene);
+
                 event.preventDefault();
             }
             
@@ -1656,17 +1765,18 @@ var csde = (function csdeMaster(){
         _paper.on("blank:mousewheel", scrollHandler);
     }
 
-    function _getSafefileName(randomized = false) {
+    function _getSavefileName(randomized = false) {
+        const { fileExtension } = SETTINGS
         if(randomized){
-            return `csde-${_generateId(6, "")}.json`;
+            return `csde-${_generateId(6, "")}${fileExtension}`;
         } else {
-            return `csde.json`;
+            return `csde${fileExtension}`;
 
         }
     }
 
-    function _getSafefileLocation(filename = '') {
-        return path.join(os.homedir(), ".csde", filename);
+    function _getSavefileLocation(filename = '') {
+        return path.join(os.homedir(), SETTINGS.fileExtension, filename);
     }
 
     function _createGradients() {
@@ -1868,14 +1978,16 @@ var csde = (function csdeMaster(){
             cellView.highlight();
         });
 
-        const filenameElement = $("#filename-textbox")
-        const filenameButtonElement = $("#filename-button")
+        const scenenameTextbox = $("#filename-textbox")
+        const scenenameSaveButton = $("#filename-button")
 
-        filenameElement.on('change', event => {
-            setFileName(event.target.value)
+        scenenameTextbox.on('change', event => {
+            _setSceneName(event.target.value)
         })
 
-        filenameButtonElement.on('click', save);
+        scenenameSaveButton.on('click', event => {
+            _saveScene(_graphToCSDE());
+        });
 
         _style.gradient = _createGradients();
 
@@ -1886,7 +1998,14 @@ var csde = (function csdeMaster(){
         _registerHotkeys(_$container);
 
         /* Load if there is a state to load from. */
-        load();
+        const backupLocation = _getSavefileLocation();
+        const autoOpenFileName = _getSavefileName(false);
+
+
+        const filePath = path.join(backupLocation, autoOpenFileName);
+        console.log("Opening ", filePath)
+        _readFromFile(path.join(backupLocation, autoOpenFileName))
+            .then(data => _CSDEToGraph(data, _graph));
 
         /* Enable autosave */
         autosave.start();
@@ -1941,67 +2060,67 @@ var csde = (function csdeMaster(){
         return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
     }
 
-    function save() {
-        const json = _graphToCSDE();
+    // function save(data = _graphToCSDE()) {
+    //     // const json = _graphToCSDE();
 
-        if (_isElectron) {
+    //     if (_isElectron) {
 
-            const directory = _getSafefileLocation();
-            // Save it in our backup directory ...
-            _saveFileAs(directory, _getSafefileName(true));
+    //         const directory = _getSafefileLocation();
+    //         // Save it in our backup directory ...
+    //         _saveFileAs(directory, _getSafefileName(true));
 
-            // ... save it in our auto-open location ...
-            _saveFileAs(directory, _getSafefileName(false));
+    //         // ... save it in our auto-open location ...
+    //         _saveFileAs(directory, _getSafefileName(false));
 
-            // ... clean up our save-cache ...
-            removeAllButNewestFiles(directory);
+    //         // ... clean up our save-cache ...
+    //         removeAllButNewestFiles(directory);
 
-            // ... and save it to our scene list if it's got a name.
-            if(!_currentFileName){
-                notify("You haven't set a file name!", "high");
-            } else {
-                _saveFileAs(path.join(process.cwd(), settings["scene-folder"]), _currentFileName + ".json");
-            }
-        } else {
-            localStorage.setItem(_getSafefileName(), JSON.stringify(json));
-        }
+    //         // ... and save it to our scene list if it's got a name.
+    //         if(!_currentFileName){
+    //             notify("You haven't set a file name!", "high");
+    //         } else {
+    //             _saveFileAs(, _currentFileName + ".json");
+    //         }
+    //     } else {
+    //         localStorage.setItem(_getSafefileName(), JSON.stringify(data));
+    //     }
 
-        notify("Saved.", "med");
-    }
+    //     notify("Saved.", "med");
+    // }
 
-    function load(data = null) {
-        _$container.scrollTop(0);
-        _$container.scrollLeft(0);
+    // function load(data = null) {
+    //     _$container.scrollTop(0);
+    //     _$container.scrollLeft(0);
 
-        let handleData = function (jsonObj) {
-            notify("Data found, loading...", 'low');
-            _CSDEToGraph(jsonObj, _graph);
-            _paper.fitToContent({ padding: 4000 });
-        };
+    //     let handleData = function (jsonObj) {
+    //         notify("Data found, loading...", 'low');
+    //         _CSDEToGraph(jsonObj, _graph);
+    //         _paper.fitToContent({ padding: 4000 });
+    //     };
 
-        if (data) {
-            handleData(data);
-            return;
-        }
+    //     if (data) {
+    //         handleData(data);
+    //         return;
+    //     }
 
-        if (_isElectron) {
-            mkdirp(_getSafefileLocation(), err => {
-                if (err) throw err;
-            });
+    //     if (_isElectron) {
+    //         mkdirp(_getSafefileLocation(), err => {
+    //             if (err) throw err;
+    //         });
 
-            fs.readFile(_getSafefileLocation(_getSafefileName()), 'utf8', (err,data) => {
-                if (err) {
-                    if (err.code === "ENOENT") return;
-                        else throw err;
-                }
-                handleData(JSON.parse(data));
-            });
-            return;
-        } else {
-            handleData(JSON.parse(localStorage.getItem(_getSafefileName())));
-            return;
-        }
-    }
+    //         fs.readFile(_getSafefileLocation(_getSafefileName()), 'utf8', (err,data) => {
+    //             if (err) {
+    //                 if (err.code === "ENOENT") return;
+    //                     else throw err;
+    //             }
+    //             handleData(JSON.parse(data));
+    //         });
+    //         return;
+    //     } else {
+    //         handleData(JSON.parse(localStorage.getItem(_getSafefileName())));
+    //         return;
+    //     }
+    // }
 
     function reduceRouterComplexity() {
         let cells = _graph.getCells();
@@ -2016,8 +2135,8 @@ var csde = (function csdeMaster(){
         addCharacter: character => _characters = addCharacter(character, _characters),
         addCharacters: characters => _characters = addCharacters(characters, _characters),
         clearCharacters: () => _characters = resetCharacters(),
-        save: save,
-        load: load,
+        save: _saveBackups.bind(null, true),
+        // load: load,
         notify: notify,
         autosave: autosave,
         reduceRouterComplexity: reduceRouterComplexity,

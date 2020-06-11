@@ -1,6 +1,8 @@
 {
-    "scene-folder": "scenes",
-    "auto-save-interval": 60,
-    "backup-count": 100,
-    "treat-altgr-as-alt": true
+    "sceneFolder": "scenes",
+    "autoSaveInterval": 60,
+    "backupCount": 100,
+    "treatAltgrAsAlt": true,
+    "fileExtension": ".csde",
+    "recybleBinFolderName": "rubbish"
 }

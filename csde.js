@@ -771,7 +771,7 @@ var csde = (function csdeMaster(){
             let imageURL = `.\\images\\characters\\${selectedChar.url}`;
 
             _testImage(imageURL).catch(error => {
-                console.error('This character does not have a valid image.\nCharacter name: "' + selectedChar.name + '", Location: "' + imageURL + '"');
+                console.error(`This character does not have a valid image.\nCharacter name: "${selectedChar.name}", Location: "${imageURL}"`, error);
                 imageURL = ".\\images\\characters\\" + _characters.find(element => element.name === "unknown").url;
             }).then(() => {
                 this.$box.$img.attr({
@@ -781,9 +781,9 @@ var csde = (function csdeMaster(){
                 });
             });
 
-            _getCharacterColour(selectedChar).then(result =>{
+            _getCharacterColour(selectedChar).then(result => {
                 this.model.attr({
-                    rect: {
+                    body: {
                         fill: {
                            type: 'linearGradient',
                            stops: [

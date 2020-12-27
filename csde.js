@@ -1118,9 +1118,13 @@ var csde = (function csdeMaster(){
         });
     }
 
-    function _getCharacterColour(character){
+    function _getCharacterColour(character) {
         if (!character.promise) { // On cache miss.
             character.promise = new Promise((resolve, reject) => {
+                if(character.color){
+                    resolve(character.color)
+                }
+
                 const DEFAULTCOLOUR = {hue: 0, saturation: 0, lightness: 70};
                 const imageURL = `.\\images\\characters\\${character.url}`;
                 _testImage(imageURL).catch(error => {

@@ -245,7 +245,7 @@ const csde = (function csdeMaster() {
     };
 
     let _highlightedLinks = [];
-    let _selectedNodes = [];
+    let _selectedNodes = new Set();
 
     const _linkHighlightClass = {
         highlighter: {
@@ -1629,7 +1629,7 @@ const csde = (function csdeMaster() {
             box.resize(Math.abs(x - start.x), Math.abs(y - start.y))
         })
 
-        paper.on('blank:pointerup', ({data: {start, isDrawing, box}}, x, y) => {
+        paper.on('blank:pointerup', ({altKey, data: {start, isDrawing, box}}, x, y) => {
             if (!isDrawing) { return }
 
             const width = Math.abs(x - start.x)
@@ -1639,17 +1639,30 @@ const csde = (function csdeMaster() {
 
             box.remove()
 
-            let views = _paper.findViewsInArea({ x, y, width, height })
+            const views = _paper.findViewsInArea({ x, y, width, height })
+            const models = views.map(view => view.model)
 
-            console.log("Views in range: ", views)
-            for(const view of views){
-                view.highlight();
+            if(altKey){
+                return _unselectNodes(models)
+            } else {
+                return _selectNodes(models)
             }
-            _selectNodes(views)
         })
 
         // clear selection when clicking without moving.
         paper.on('blank:pointerclick', _clearSelection)
+
+        graph.on('change:position', function (element, position, optional) {
+            if(!_selectedNodes.has(element) || optional.ignoreMe){
+                return;
+            }
+
+            const otherNodes = [..._selectedNodes].filter(n => n !== element)
+
+            for (const node of otherNodes) {
+                node.translate(optional.tx, optional.ty, {ignoreMe: true})
+            }
+        });
     }
 
     function _registerPanning(paper, element) {
@@ -1795,9 +1808,9 @@ const csde = (function csdeMaster() {
     }
 
     function _clearAllLinkHighlights() {
-        for (let link of _highlightedLinks) {
-            let view = link.findView(_paper);
-            if(view) { view.unhighlight(null, _linkHighlightClass); }
+        for (const link of _highlightedLinks) {
+            const view = link.findView(_paper);
+            view.unhighlight(null, _linkHighlightClass);
         }
         _highlightedLinks = [];
     }
@@ -1807,28 +1820,45 @@ const csde = (function csdeMaster() {
             throw new TypeError("Please provide an array of links.");
         }
 
-        for (let link of linksToHighlight) {
-            let view = link.findView(_paper);
-            if (view) {
-                view.highlight(null, _linkHighlightClass);
-            }
+        for (const link of linksToHighlight) {
+            const view = link.findView(_paper);
+            view.highlight(null, _linkHighlightClass);
         }
-        _highlightedLinks = _highlightedLinks.concat(linksToHighlight);
+
+        _highlightedLinks.push(...linksToHighlight);
     }
 
     function _clearSelection() {
         for (const node of _selectedNodes) {
-            node.unhighlight()
+            const view = node.findView(_paper);
+            view.unhighlight()
         }
-        _selectedNodes = [];
+        _selectedNodes = new Set();
     }
 
     function _selectNodes(nodesToSelect) {
-        for (const node of nodesToSelect) {
-            node.highlight()
+        if (!Array.isArray(nodesToSelect) || ! nodesToSelect.every(node => node.isElement())) {
+            throw new TypeError("Please provide an array of Elements.");
         }
 
-        _selectedNodes.push(...nodesToSelect);
+        for (const node of nodesToSelect) {
+            const view = node.findView(_paper)
+            view.highlight()
+
+            _selectedNodes.add(node)
+        }
+    }
+
+    function _unselectNodes(nodesToUnselect) {
+        if (!Array.isArray(nodesToUnselect) || ! nodesToUnselect.every(node => node.isElement())) {
+            throw new TypeError("Please provide an array of Elements.");
+        }
+
+        for(const node of nodesToUnselect) {
+            const view = node.findView(_paper)
+            view.unhighlight()
+            _selectedNodes.delete(node)
+        }
     }
 
     function initialize(baseElement, {width = 800, height = 600} = {}) {

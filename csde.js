@@ -21,7 +21,7 @@ var csde = (function csdeMaster(){
     let _graph = null;
     let _paper = null;
     let autosave = new Autosaver(SETTINGS.autoSaveInterval, _saveBackups);
-    let _characters = resetCharacters();
+    let _characters = getDefaultCharacterList();
     let _mouseObj = {
         panning: false,
         position: { x: 0, y: 0 }
@@ -1703,8 +1703,60 @@ var csde = (function csdeMaster(){
         });
     }
 
+    function _registerBoxSelect(paper, graph) {
+        paper.on('blank:pointerdown', (event, x, y) => {
+            if (!event.shiftKey) { return; }
+
+
+            const box = new joint.shapes.standard.Rectangle();
+            box.resize(1, 1);
+            box.position(x, y);
+            box.attr('body/fill', 'transparent');
+            box.attr('body/stroke', 'yellow');
+
+            box.addTo(graph);
+
+            event.data = {
+                isDrawing: event.shiftKey,
+                start: { x, y },
+                box,
+            }
+        })
+
+        paper.on('blank:pointermove', ({data: {start, box, isDrawing}}, x, y) => {
+            //const start = start
+            if (!isDrawing) { return }
+            
+            box.position(Math.min(start.x, x), Math.min(start.y, y))
+            box.resize(Math.abs(x - start.x), Math.abs(y - start.y))
+        })
+
+        paper.on('blank:pointerup', ({data: {start, isDrawing, box}}, x, y) => {
+            if (!isDrawing) { return }
+
+            const width = Math.abs(x - start.x)
+            const height = Math.abs(y -start.y)
+            x = Math.min(start.x, x)
+            y = Math.min(start.y, y)
+
+            box.remove()
+
+            let views = _paper.findViewsInArea({ x, y, width, height })
+
+            console.log("Views in range: ", views)
+            for(const view of views){
+                view.highlight();
+            }
+            _selectNodes(views)
+        })
+
+        // clear selection when clicking without moving.
+        paper.on('blank:pointerclick', _clearSelection)
+    }
+
     function _registerPanning(paper, element) {
-        paper.on('blank:pointerdown', (event, x, y) =>{
+        paper.on('blank:pointerdown', (event, x, y) => {
+            if(event.shiftKey) return;
             _mouseObj.panning = true;
             _mouseObj.position = {x: event.pageX, y: event.pageY};
             $('body').css('cursor', 'move');
@@ -1725,8 +1777,8 @@ var csde = (function csdeMaster(){
         });
     }
 
-    function _registerHotkeys(element) {
-        $(document).keydown(event => {
+    function _registerHotkeys(paper, element) {
+        element.on('keydown', event => {
             /* Save */
             if(event.ctrlKey && event.key === 's'){
                 const shouldSaveScene = Boolean(_currentSceneName);
@@ -1759,14 +1811,14 @@ var csde = (function csdeMaster(){
             }
         };
         const scrollCellHandler = (cellView, evt, x, y, delta) => {
-            if(event.ctrlKey){
+            if(evt.ctrlKey){
                 // Delta is either -1 or +1, so this works out!
                 webFrame.setZoomLevel(webFrame.getZoomLevel() + delta);
             }
         };
 
-        _paper.on("cell:mousewheel", scrollCellHandler);
-        _paper.on("blank:mousewheel", scrollHandler);
+        paper.on("cell:mousewheel", scrollCellHandler);
+        paper.on("blank:mousewheel", scrollHandler);
     }
 
     function _getSavefileName(randomized = false) {
@@ -1868,20 +1920,14 @@ var csde = (function csdeMaster(){
 
     function _clearSelection() {
         for (const node of _selectedNodes) {
-            const view = node.findView(_paper);
-            view.removeClass("selected");
+            node.unhighlight()
         }
         _selectedNodes = [];
     }
 
     function _selectNodes(nodesToSelect) {
-        if(!Array.isArray(nodesToSelect) || nodesToSelect.every(node => node.isElement())){
-            throw new TypeError("Error: Expected an array of elements.");
-        }
-
         for (const node of nodesToSelect) {
-            const view = node.findView(_paper);
-            view.addClass("selected");
+            node.highlight()
         }
 
         _selectedNodes.push(...nodesToSelect);
@@ -1978,9 +2024,10 @@ var csde = (function csdeMaster(){
             let file = event.originalEvent.dataTransfer.files[0]; // We're only intersted in one file.
             _handleFile(file);
         });
-        _$container.$paper.on('cell:pointerclick', function(cellView) {
-            cellView.highlight();
-        });
+        
+        // _paper.on('cell:pointerclick', function(cellView) {
+        //     cellView.highlight();
+        // });
 
         const scenenameTextbox = $("#filename-textbox")
         const scenenameSaveButton = $("#filename-button")
@@ -1997,9 +2044,11 @@ var csde = (function csdeMaster(){
 
         _addContextMenus(_$container);
 
+        _registerBoxSelect(_paper, _graph);
+
         _registerPanning(_paper, _$container);
 
-        _registerHotkeys(_$container);
+        _registerHotkeys(_paper, _$container);
 
         /* Load if there is a state to load from. */
         const backupLocation = _getSavefileLocation();
@@ -2043,7 +2092,7 @@ var csde = (function csdeMaster(){
         }, timeoutDuration);
     }
 
-    function addCharacters(newCharacters, list = resetCharacters()) {
+    function addCharacters(newCharacters, list = getDefaultCharacterList()) {
         if (! Array.isArray(newCharacters) || ! newCharacters.every(_isValidCharacter)) {
             throw new TypeError("The character list must be an array of objects, with each object having a name and url key.");
         }
@@ -2053,97 +2102,24 @@ var csde = (function csdeMaster(){
         return list.concat(newCharacters);
     }
 
-    function addCharacter(newCharacter, list = resetCharacters()){
+    function addCharacter(newCharacter, list = getDefaultCharacterList()){
         if (! _isValidCharacter(newCharacter)) {
             throw new TypeError("The character must be an object with a name and url key.");
         }
         return addCharacters([newCharacter], list);
     }
 
-    function resetCharacters(){
+    function getDefaultCharacterList(){
         return addCharacter({name: 'unknown', url: 'unknown.png'}, []);
-    }
-
-    // function save(data = _graphToCSDE()) {
-    //     // const json = _graphToCSDE();
-
-    //     if (_isElectron) {
-
-    //         const directory = _getSafefileLocation();
-    //         // Save it in our backup directory ...
-    //         _saveFileAs(directory, _getSafefileName(true));
-
-    //         // ... save it in our auto-open location ...
-    //         _saveFileAs(directory, _getSafefileName(false));
-
-    //         // ... clean up our save-cache ...
-    //         removeAllButNewestFiles(directory);
-
-    //         // ... and save it to our scene list if it's got a name.
-    //         if(!_currentFileName){
-    //             notify("You haven't set a file name!", "high");
-    //         } else {
-    //             _saveFileAs(, _currentFileName + ".json");
-    //         }
-    //     } else {
-    //         localStorage.setItem(_getSafefileName(), JSON.stringify(data));
-    //     }
-
-    //     notify("Saved.", "med");
-    // }
-
-    // function load(data = null) {
-    //     _$container.scrollTop(0);
-    //     _$container.scrollLeft(0);
-
-    //     let handleData = function (jsonObj) {
-    //         notify("Data found, loading...", 'low');
-    //         _CSDEToGraph(jsonObj, _graph);
-    //         _paper.fitToContent({ padding: 4000 });
-    //     };
-
-    //     if (data) {
-    //         handleData(data);
-    //         return;
-    //     }
-
-    //     if (_isElectron) {
-    //         mkdirp(_getSafefileLocation(), err => {
-    //             if (err) throw err;
-    //         });
-
-    //         fs.readFile(_getSafefileLocation(_getSafefileName()), 'utf8', (err,data) => {
-    //             if (err) {
-    //                 if (err.code === "ENOENT") return;
-    //                     else throw err;
-    //             }
-    //             handleData(JSON.parse(data));
-    //         });
-    //         return;
-    //     } else {
-    //         handleData(JSON.parse(localStorage.getItem(_getSafefileName())));
-    //         return;
-    //     }
-    // }
-
-    function reduceRouterComplexity() {
-        let cells = _graph.getCells();
-        for (let cell of cells) {
-            if (cell.isLink()) {
-                cell.connector('normal');
-            }
-        }
     }
 
     return {
         addCharacter: character => _characters = addCharacter(character, _characters),
         addCharacters: characters => _characters = addCharacters(characters, _characters),
-        clearCharacters: () => _characters = resetCharacters(),
+        clearCharacters: () => _characters = getDefaultCharacterList(),
         save: _saveBackups.bind(null, true),
-        // load: load,
-        notify: notify,
-        autosave: autosave,
-        reduceRouterComplexity: reduceRouterComplexity,
+        notify,
+        autosave,
         start: initialize
     };
 })();

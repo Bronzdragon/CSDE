@@ -12,7 +12,7 @@ const SETTINGS = require('./settings.json');
 const Autosaver = require('./modules/autosave')
 
 
-var csde = (function csdeMaster(){
+const csde = (function csdeMaster() {
     const RECYCLE_BIN_NAME = SETTINGS.recybleBinFolderName
     let _currentSceneName = '';
 
@@ -745,7 +745,7 @@ var csde = (function csdeMaster(){
 
                 //this.$box.$character_select; // Our dropdown menu.
                 let offset = this.$box.$character_select.prop('selectedIndex') + 1;
-                for (var i = 0; i < options.length; i++) {
+                for (let i = 0; i < options.length; i++) {
                     let index = (i + offset) % options.length;
                     if (options[index].charAt(0).toLowerCase() === event.key.toLowerCase()) {
                         this.model.set('actor', options[index]);
@@ -1099,7 +1099,14 @@ var csde = (function csdeMaster(){
 
     function _testImage(url, timeout = 5000) {
         return new Promise(function (resolve, reject) {
-            var timer, img = new Image();
+            const timer = setTimeout(function () {
+                // reset .src to invalid URL so it stops previous
+                // loading, but doesn't trigger new load
+                img.src = "//!!!!/test.jpg";
+                reject("Timeout occured");
+            }, timeout);
+
+            const img = new Image();
             img.onerror = img.onabort = function () {
                 clearTimeout(timer);
                 reject("Not a valid image");
@@ -1108,12 +1115,7 @@ var csde = (function csdeMaster(){
                 clearTimeout(timer);
                 resolve("Success");
             };
-            timer = setTimeout(function () {
-                // reset .src to invalid URL so it stops previous
-                // loading, but doesn't trigger new load
-                img.src = "//!!!!/test.jpg";
-                reject("Timeout occured");
-            }, timeout);
+            
             img.src = url;
         });
     }
@@ -1204,11 +1206,6 @@ var csde = (function csdeMaster(){
     }
 
     function _handleFile(fileBlob) {
-        /*if (fileBlob.type !== "application/json") {
-            notify("Unsupported file.", "high");
-            return;
-        }*/
-
         let reader = new FileReader();
 
         reader.onloadend = event => {
@@ -1341,12 +1338,10 @@ var csde = (function csdeMaster(){
                 window.setImmediate(() => {
                     _CSDEToGraph_CreateNodes(jsonObj, graph).then(resolve);
                 });
-                // window.setTimeout(_CSDEToGraph_CreateNodes, 0, jsonObj, graph);
             } else {
                 window.setImmediate(() => {
                     _CSDEToGraph_CreateLinks(jsonObj.createdNodes, graph).then(resolve);
                 });
-                // window.setTimeout(_CSDEToGraph_CreateLinks, 0, jsonObj.createdNodes, graph);
             }
         })
         // return newNode;
@@ -1377,18 +1372,17 @@ var csde = (function csdeMaster(){
             graph.addCell(new_link);
         }
 
-        return new Promise(resolve => {
-            if (nodelist.length > 0) {
+        if (nodelist.length > 0) {
+            // If there's more nodes to link, add a todo, so we don't block this thread.
+            return new Promise(resolve => {
                 window.setImmediate(() => {
                     _CSDEToGraph_CreateLinks(nodelist, graph).then(resolve);
                 });
-                // If there's more nodes to link, add a todo, so we don't block this thread.
-                // window.setTimeout(_CSDEToGraph_CreateLinks, 0, nodelist, graph);
-            } else {
-                notify("CSDE file has been imported.", "med");
-                resolve(true);
-            }
-        });
+            });
+        } else {
+            notify("CSDE file has been imported.", "med");
+            return Promise.resolve(true)
+        }
     }
 
     function _graphToCSDE() {
@@ -1397,8 +1391,8 @@ var csde = (function csdeMaster(){
             text: obj.text
         })
 
-        let nodes = [];
-        var newIds = new Map();
+        const nodes = [];
+        const newIds = new Map();
 
         let nodeIdCounter = 0;
         for (let element of _graph.getElements()) {
@@ -1481,101 +1475,6 @@ var csde = (function csdeMaster(){
         };
     }
 
-    function _graphToUVPN() {
-        function _remapConnections(obj) {
-            return ({
-                id: newIds.get(obj.id),
-                text: obj.text
-            });
-        }
-
-        let nodes = [];
-        var newIds = new Map();
-
-        let nodeIdCounter = 0;
-        for (let element of _graph.getElements()) {
-            newIds.set(element.id, _pad(nodeIdCounter.toString(36), 4));
-            nodeIdCounter++;
-        }
-
-        for (let element of _graph.getElements()) {
-            let type = element.get("type");
-            if (!["dialogue.Text", "dialogue.Set", "dialogue.Branch", "dialogue.Choice"].includes(type)) continue;
-
-            let node = {
-                id: newIds.get(element.id),
-                type: type,
-                outbound: []
-            };
-
-            let ports = [];
-            switch (node.type) {
-                case "dialogue.Text":
-                    node.actor = element.get("actor") || "unknown";
-                    node.text = element.get("speech") || "";
-
-                    ports = element.getPorts().filter(port => port.group === "output").map(port => ({id: port.id, text: "output"}));
-                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), true).map(_remapConnections);
-                    break;
-                case "dialogue.Set":
-                    node.key = element.get("userKey") || "";
-                    node.value = element.get("userValue") || "";
-
-                    ports = element.getPorts().find(port => port.group === "output").map(port => ({id: port.id, text: "output"}));
-                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), true).map(_remapConnections);
-                    break;
-                case "dialogue.Branch":
-                    node.key = element.get("userKey") || "";
-
-                    ports = element.get("values").map(port => ({id: port.id, text: port.value}));
-                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), true).map(_remapConnections);
-                    break;
-                case "dialogue.Choice":
-                    ports = ports = element.get("values").map(port => ({id: port.id, text: port.value}));
-                    node.outbound = _findConnectedElements(ports, _graph.getConnectedLinks(element), true).map(_remapConnections);
-                    break;
-                case "dialogue.Note":
-                    node.text = element.get("text") || "";
-                default:
-                    break;
-            }
-
-            nodes.push(node);
-        }
-
-        return {
-            version: 0.1,
-            format: "UVNP",
-            nodes: nodes
-        };
-    }
-
-    // function _exportCSDE() {
-    //     notify("Starting export of CSDE file.", "med");
-    //     _offerAsFile(_graphToCSDE(), `export${SETTINGS.fileExtension}`);
-    // }
-
-    // function _exportUVNP() {
-    //     notify("Exporting UVNP file.", "med");
-    //     _offerAsFile(_graphToUVPN(), "export.uvnp");
-    // }
-
-    // function _offerAsFile(data, filename = "download.json"){
-    //     if (!data || $.type(filename) !== "string") return;
-
-    //     let $link = $("<a>")
-    //     .attr({
-    //         "download": filename,
-    //         "href": `data:application/json,${encodeURIComponent(JSON.stringify(data))}`,
-    //         "target": "_blank"
-    //     })
-    //     .hide()
-    //     .appendTo($('body'))
-    //     .click()
-    //     .remove();
-        
-    //     _setSceneName(filename)
-    // }
 
     function _addContextMenus(element) {
         // Right click menu.
@@ -1706,7 +1605,6 @@ var csde = (function csdeMaster(){
     function _registerBoxSelect(paper, graph) {
         paper.on('blank:pointerdown', (event, x, y) => {
             if (!event.shiftKey) { return; }
-
 
             const box = new joint.shapes.standard.Rectangle();
             box.resize(1, 1);

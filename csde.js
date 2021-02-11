@@ -1622,9 +1622,8 @@ const csde = (function csdeMaster() {
         })
 
         paper.on('blank:pointermove', ({data: {start, box, isDrawing}}, x, y) => {
-            //const start = start
             if (!isDrawing) { return }
-            
+
             box.position(Math.min(start.x, x), Math.min(start.y, y))
             box.resize(Math.abs(x - start.x), Math.abs(y - start.y))
         })
@@ -1652,17 +1651,29 @@ const csde = (function csdeMaster() {
         // clear selection when clicking without moving.
         paper.on('blank:pointerclick', _clearSelection)
 
-        graph.on('change:position', function (element, position, optional) {
-            if(!_selectedNodes.has(element) || optional.ignoreMe){
-                return;
-            }
+        paper.on('element:pointerdown', (elementView, event) => {
+            const element = elementView.model
+            console.log(element, _selectedNodes)
+            if (!_selectedNodes.has(element)) { return; }
+            event.data = {...event.data, origin: element.position() }
+
+            console.log("Begin drag.")
+        })
+        paper.on('element:pointerup', (elementView, event) => {
+            const element = elementView.model
+            if (!_selectedNodes.has(element)) { return; }
+            console.log(event.data.origin)
+            const destination = element.position();
+            
+            const x = destination.x - event.data.origin.x
+            const y = destination.y - event.data.origin.y
 
             const otherNodes = [..._selectedNodes].filter(n => n !== element)
 
             for (const node of otherNodes) {
-                node.translate(optional.tx, optional.ty, {ignoreMe: true})
+                node.translate(x, y)
             }
-        });
+        })
     }
 
     function _registerPanning(paper, element) {

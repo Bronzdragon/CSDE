@@ -1653,16 +1653,12 @@ const csde = (function csdeMaster() {
 
         paper.on('element:pointerdown', (elementView, event) => {
             const element = elementView.model
-            console.log(element, _selectedNodes)
             if (!_selectedNodes.has(element)) { return; }
             event.data = {...event.data, origin: element.position() }
-
-            console.log("Begin drag.")
         })
         paper.on('element:pointerup', (elementView, event) => {
             const element = elementView.model
             if (!_selectedNodes.has(element)) { return; }
-            console.log(event.data.origin)
             const destination = element.position();
             
             const x = destination.x - event.data.origin.x

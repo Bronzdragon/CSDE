@@ -505,10 +505,6 @@ const csde = (function csdeMaster() {
                 this.model.set('values', values);
             });
 
-            $newChoice.$value.on("contextmenu", event => {
-                event.stopPropagation();
-            });
-
             if (!choice.isDefault) {
                 $newChoice.$remove = $newChoice.find('button.remove');
                 $newChoice.$remove.click(event => {
@@ -679,10 +675,6 @@ const csde = (function csdeMaster() {
 
             this.$box.$character_select.change(event =>{
                 this.model.set('actor', $(event.target).val());
-            });
-
-            this.$box.$speech.on("contextmenu", event => {
-                event.stopPropagation();
             });
 
             this.$box.$speech.on('input propertychange', event => {
@@ -865,11 +857,6 @@ const csde = (function csdeMaster() {
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
 
             this.$box.$note = this.$box.find("textarea");
-
-            this.$box.$note.on("contextmenu", event => {
-                event.stopPropagation();
-            });
-
 
             this.$box.$note.width(_style.node.note.width - this.padding * 2);
             this.$box.$note.css({top: this.padding, left: this.padding, position:'absolute'});
@@ -1477,10 +1464,10 @@ const csde = (function csdeMaster() {
     }
 
 
-    function _addContextMenus(element) {
+    function _addContextMenus(element, paper) {
         // Right click menu.
         $.contextMenu({
-            selector: 'div#paper',
+            selector: '#context-menu-container',
             callback: function (itemKey, opt, rootMenu, originalEvent) {
 
                 let pos = {
@@ -1517,23 +1504,7 @@ const csde = (function csdeMaster() {
                 'data': {
                     name: 'Data management',
                     items: {
-                        /*'import-legacy': {
-                        name: "Import (legacy)",
-                            callback: () => {
-                                let $file = $('<input type="file" accept="application/json,.json" />')
-                                .hide()
-                                .on('change', function (event) {
-                                    let reader = new FileReader();
-                                    reader.addEventListener("loadend",  event => {
-                                        _graph.fromJSON(JSON.parse(event.target.result));
-                                    });
-                                    reader.readAsText(this.files[0]);
-                                    $file.remove();
-                                })
-                                .appendTo("body")
-                                .click();
-                            }
-                        },*/ 'import': {
+                        'import': {
                             name: "Import from file",
                             callback: async () => {
                                 const result = await dialog.showOpenDialog({properties: ["openFile"]});
@@ -1542,15 +1513,6 @@ const csde = (function csdeMaster() {
                                 const { filePaths: [ filePath ] } = result;
 
                                 _loadFile(filePath);
-                                // let $file = $('<input type="file" accept="application/json,.csde" />')
-                                // .hide()
-                                // .on('change', function (event) {
-                                //     setFileName(this.value.slice(12, -5));
-                                //     _handleFile(this.files[0]); // We care about only the first file.
-                                //     $file.remove();
-                                // })
-                                // .appendTo("body")
-                                // .click();
                             }
                         }, 'export-csde': {
                             name: "Export (CSDE format)",
@@ -1564,10 +1526,6 @@ const csde = (function csdeMaster() {
                                 _exportToFile(dir, base, _graphToCSDE())
                             }
                         },
-                        // 'export-uvnp': {
-                        //     name: "Export (UVNP format)",
-                        //     callback: _exportUVNP
-                        // },
                         'new': {
                             name: 'Open blank file',
                             callback: _clearGraph
@@ -1601,6 +1559,14 @@ const csde = (function csdeMaster() {
                 'Start': {name: 'Start'},
             }
         });
+
+        paper.on('blank:contextmenu', (event, x, y) => {
+            $('#context-menu-container').contextMenu({
+                x: x - _$container.scrollLeft(),
+                y: y - _$container.scrollTop(),
+            })
+            
+        })
     }
 
     function _registerBoxSelect(paper, graph) {
@@ -1986,7 +1952,7 @@ const csde = (function csdeMaster() {
 
         _style.gradient = _createGradients();
 
-        _addContextMenus(_$container);
+        _addContextMenus(_$container, _paper);
 
         _registerBoxSelect(_paper, _graph);
 

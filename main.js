@@ -3,7 +3,7 @@ const {
     app,
     BrowserWindow
 } = require('electron');
-// require('electron-debug')();
+
 const fs = require('fs');
 const path = require('path');
 const os = require('os');

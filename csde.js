@@ -6,8 +6,9 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const mkdirp = require('mkdirp');
-const { webFrame } = require('electron');
-const { dialog } = require('electron').remote
+const { webFrame, remote } = require('electron');
+const { dialog } = remote
+const { FindInPage } = require('electron-find');
 const SETTINGS = require('./settings.json');
 const Autosaver = require('./modules/autosave')
 
@@ -1695,29 +1696,37 @@ const csde = (function csdeMaster() {
         });
     }
 
-    function _registerHotkeys(paper, element) {
-        element.on('keydown', event => {
+    function _registerHotkeys(paper) {
+        let findInPage = new FindInPage(remote.getCurrentWebContents())
+
+        $(document).on('keydown', event => {
             /* Save */
-            if(event.ctrlKey && event.key === 's'){
+            if (event.ctrlKey && event.key === 's') {
                 const shouldSaveScene = Boolean(_currentSceneName);
                 _saveBackups(shouldSaveScene);
 
                 event.preventDefault();
             }
+
+            /* Find */
+            if (event.ctrlKey && event.key === 'f') {
+                console.log("Opening find dialogue")
+                findInPage.openFindWindow()
+            }
             
             /* Zoom in */
-            if(event.ctrlKey && (event.key === '=' || event.key === '+')){
+            if (event.ctrlKey && (event.key === '=' || event.key === '+')) {
                 webFrame.setZoomLevel(webFrame.getZoomLevel() + 1);
             }
 
             /* Zoom out */
-            if(event.ctrlKey && event.key === '-'){
+            if (event.ctrlKey && event.key === '-') {
                 webFrame.setZoomLevel(webFrame.getZoomLevel() - 1);
 
             }
 
             /* Reset zoom */
-            if(event.ctrlKey && event.key === '0'){
+            if (event.ctrlKey && event.key === '0') {
                 webFrame.setZoomLevel(0);
             }
         });
@@ -1983,7 +1992,7 @@ const csde = (function csdeMaster() {
 
         _registerPanning(_paper, _$container);
 
-        _registerHotkeys(_paper, _$container);
+        _registerHotkeys(_paper);
 
         /* Load if there is a state to load from. */
         const backupLocation = _getSavefileLocation();

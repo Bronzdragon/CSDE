@@ -1346,7 +1346,7 @@ const csde = (function csdeMaster() {
             let outboundId = link.id;
             let outboundPort = graph.getCell(outboundId).getPorts().find(element => element.group === "input").id;
 
-            if (["dialogue.Text", "dialogue.Set"].includes(node.type)){
+            if (["dialogue.Text", "dialogue.Set", "dialogue.Start"].includes(node.type)){
                 // ??? Why are these two different?
                 inboundPort = graph.getCell(inboundId).getPorts().find(element => element.group === "output").id;
             } else {

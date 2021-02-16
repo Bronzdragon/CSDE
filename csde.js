@@ -673,7 +673,7 @@ const csde = (function csdeMaster() {
                 this.$box.$character_select.append($character_option);
             }
 
-            this.$box.$character_select.change(event =>{
+            this.$box.$character_select.on('change', event =>{
                 this.model.set('actor', $(event.target).val());
             });
 
@@ -682,15 +682,15 @@ const csde = (function csdeMaster() {
             });
 
             // Set enter to submit (which will spawn a new textbox).
-            this.$box.$speech.keypress(event => {
+            this.$box.$speech.on('keypress', event => {
                 if (event.key === "Enter" && !event.shiftKey) {
-                    $(event.target).submit();
-                    // Cancels the keypress, so no additional enter is entered.
+                    $(event.target).trigger('submit');
+                    // Cancels the keypress, so no additional line break is entered.
                     event.preventDefault();
                 }
             });
 
-            this.$box.$speech.submit(event => { // Spanw a new textbox when enter is pressed
+            this.$box.$speech.on('submit', event => { // Spawn a new textbox when enter is pressed
                 let bounding_box = this.model.getBBox();
                 let new_box = new joint.shapes.dialogue.Text({
                     position: {
@@ -723,20 +723,19 @@ const csde = (function csdeMaster() {
                 new_link.target({id: new_box.id, port: new_box.getPorts().find(element => element.group === "input").id});
                 _graph.addCell(new_link);
 
+                _paper.once("render:done", () => {
+                    new_box.trigger('focus');
+                })
 
-                new_box.trigger('focus');
                 event.preventDefault();
             });
 
-            this.$box.$speech.keydown(event => { // Character name switching code.
-                // Using keydown instead of keypress, because it doesn't work correctly in Google Chrome
+            this.$box.$speech.on('keydown', event => { // Character name switching code.
                 if(!event.altKey && (SETTINGS.treatAltgrAsAlt || !event.ctrlKey))
                     return;
 
-
                 let options = _characters.map(element => element.name);
 
-                //this.$box.$character_select; // Our dropdown menu.
                 let offset = this.$box.$character_select.prop('selectedIndex') + 1;
                 for (let i = 0; i < options.length; i++) {
                     let index = (i + offset) % options.length;
@@ -751,8 +750,8 @@ const csde = (function csdeMaster() {
             this.listenTo(this.model, 'focus', this.focus);
         },
 
-        focus: function() {
-            this.$box.$speech.focus();
+        focus() {
+            this.$box.$speech.trigger('focus');
         },
 
         updateBox: function() {
@@ -1792,6 +1791,7 @@ const csde = (function csdeMaster() {
     function _clearAllLinkHighlights() {
         for (const link of _highlightedLinks) {
             const view = link.findView(_paper);
+            if(!view) continue; // Link was deleted
             view.unhighlight(null, _linkHighlightClass);
         }
         _highlightedLinks = [];
@@ -1804,6 +1804,7 @@ const csde = (function csdeMaster() {
 
         for (const link of linksToHighlight) {
             const view = link.findView(_paper);
+            if(!view) continue; // Link was deleted
             view.highlight(null, _linkHighlightClass);
         }
 
@@ -1813,6 +1814,7 @@ const csde = (function csdeMaster() {
     function _clearSelection() {
         for (const node of _selectedNodes) {
             const view = node.findView(_paper);
+            if(!view) continue; // Element was deleted
             view.unhighlight()
         }
         _selectedNodes = new Set();
@@ -1825,8 +1827,9 @@ const csde = (function csdeMaster() {
 
         for (const node of nodesToSelect) {
             const view = node.findView(_paper)
+            if(!view) continue; // Element was deleted
+            
             view.highlight()
-
             _selectedNodes.add(node)
         }
     }
@@ -1838,6 +1841,8 @@ const csde = (function csdeMaster() {
 
         for(const node of nodesToUnselect) {
             const view = node.findView(_paper)
+            if(!view) continue; // Element was deleted
+
             view.unhighlight()
             _selectedNodes.delete(node)
         }

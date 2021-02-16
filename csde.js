@@ -1522,7 +1522,7 @@ const csde = (function csdeMaster() {
                                 const { filePath } = result;
                                 const { dir, base } = path.parse(filePath);
 
-                                _exportToFile(dir, base, _graphToCSDE())
+                                _exportToFile(dir, base, JSON.stringify(_graphToCSDE()))
                             }
                         },
                         'new': {

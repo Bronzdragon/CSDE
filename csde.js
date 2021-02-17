@@ -860,22 +860,33 @@ const csde = (function csdeMaster() {
             this.$box.$note.width(_style.node.note.width - this.padding * 2);
             this.$box.$note.css({top: this.padding, left: this.padding, position:'absolute'});
 
-            this.$box.$note.autoResize({animate: false, extraSpace: 0, onResize: () => this.updateBox()});
-            this.$box.$note.on('blur', event => {
+            this.$box.$note.on('blur input ', event => {
                 this.model.set('noteText', $(event.target).val());
             })
-
             this.$box.$note.text(this.model.get('noteText'));
 
+            _paper.once("render:done", () => {
+                this.render()
+            })
         },
 
         updateBox: function() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
-            this.model.resize(this.$box.$note.outerWidth() + this.padding * 2,
-                this.$box.$note.outerHeight() + this.padding *2);
+            this.$box.$note.text(this.model.get('noteText'));
+
+            this.updateSize()
         },
 
-        addMagnets: function() { /* Do nothing, we don't want magnets*/ }
+        updateSize: function() {
+            this.$box.$note.css('height', 'auto');
+            this.$box.$note.css('height', this.$box.$note.prop("scrollHeight"));
+            this.model.resize(
+                this.$box.$note.outerWidth() + this.padding * 2,
+                this.$box.$note.outerHeight() + this.padding *2
+            );
+        },
+
+        addMagnets: function() { /* Do nothing, we don't want magnets */ }
     });
 
     joint.shapes.dialogue.Base.define('dialogue.Scene', {
@@ -1336,6 +1347,7 @@ const csde = (function csdeMaster() {
 
     function _CSDEToGraph_CreateLinks(nodelist, graph) {
         let node = nodelist.pop();
+
         for (let link of node.outbound) {
             if (!link.id) continue;
 

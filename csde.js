@@ -292,7 +292,7 @@ const csde = (function csdeMaster() {
                 'Test node.' +
             '</div>',
 
-        initialize: function () {
+        initialize() {
             joint.dia.ElementView.prototype.initialize.apply(this, arguments);
 
             this.addMagnets();
@@ -317,7 +317,7 @@ const csde = (function csdeMaster() {
             window.setTimeout(() => this.updateBox(), 0);
         },
 
-        render: function() {
+        render() {
             joint.dia.ElementView.prototype.render.apply(this, arguments);
             this.paper.$el.prepend(this.$box);
             this.updateBox();
@@ -325,7 +325,7 @@ const csde = (function csdeMaster() {
             return this;
         },
 
-        updateBox: function() {
+        updateBox() {
             let bbox = this.model.getBBox();
             this.$box.css({
                 width: bbox.width, height: bbox.height,
@@ -349,9 +349,9 @@ const csde = (function csdeMaster() {
             return this;
         },
 
-        removeBox: function(event) { this.$box.remove(); },
+        removeBox(event) { this.$box.remove(); },
 
-        addMagnets: function(){
+        addMagnets() {
             if (!this.model.get('input')) {
                 this.model.set("input", {
                     group: "input",
@@ -386,7 +386,7 @@ const csde = (function csdeMaster() {
             }
         },
 
-        highlightAllConnectedLinks: function() {
+        highlightAllConnectedLinks() {
             _clearAllLinkHighlights(); // Clear all existing highlights first
             _highlightLinks(_graph.getConnectedLinks(this.model));
         }
@@ -438,7 +438,7 @@ const csde = (function csdeMaster() {
                 '<input type="text" class="value" value="<%= templateValue %>">' +
             '</div>',
 
-        initialize: function() {
+        initialize() {
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
 
             this.$box.$header = this.$box.find('div.header');
@@ -449,7 +449,7 @@ const csde = (function csdeMaster() {
             this.$box.$add.click(() => this.addChoice());
         },
 
-        updateBox: function() {
+        updateBox() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
             let values = this.model.get('values');
 
@@ -487,7 +487,7 @@ const csde = (function csdeMaster() {
             this.updateSize();
         },
 
-        newElement: function(container, id, choice = {value = '', isDefault = false} = {}) {
+        newElement(container, id, choice = {value = '', isDefault = false} = {}) {
             if (!(container instanceof jQuery)) { throw new TypeError("The container must be a jQuery object"); }
             let template = choice.isDefault ? this.defaultTemplate : this.choiceTemplate;
 
@@ -552,14 +552,14 @@ const csde = (function csdeMaster() {
             return $newChoice;
         },
 
-        addChoice: function(textValue = '', isDefault = false) {
+        addChoice(textValue = '', isDefault = false) {
             let values = this.model.get('values');
             values.push({id: _generateId(), value: textValue, isDefault: isDefault});
             this.model.set('values', values);
             this.updateBox();
         },
 
-        updateSize: function() {
+        updateSize() {
             let style = null;
             switch (this.model.get('type')) {
                 case "dialogue.Branch":
@@ -595,7 +595,7 @@ const csde = (function csdeMaster() {
 
         },
 
-        addMagnets: function(){
+        addMagnets(){
             if (!this.model.get('input')) {
                 this.model.set('input', {
                     group: "input",
@@ -614,7 +614,7 @@ const csde = (function csdeMaster() {
             }
         },
 
-        highlightChoiceConnectedLinks: function(event) {
+        highlightChoiceConnectedLinks(event) {
             let portIds = [ // Port IDs of the relevant outport and inport
                 $(event.currentTarget).prop('id'),
                 (this.model.getPorts()).find(port => port.group = "input").id
@@ -657,7 +657,7 @@ const csde = (function csdeMaster() {
                 '</div>' +
             '</div>',
 
-        initialize: function () {
+        initialize() {
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments); // Run the parent function first.
 
             this.$box.$img = this.$box.find('img.portrait');
@@ -754,7 +754,7 @@ const csde = (function csdeMaster() {
             this.$box.$speech.trigger('focus');
         },
 
-        updateBox: function() {
+        updateBox() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
             let selectedChar = _characters.find(element => element.name === this.model.get("actor"));
@@ -812,7 +812,7 @@ const csde = (function csdeMaster() {
             '<input type="text" class="userValue" placeholder="Value" />' +
         '</div>',
 
-        initialize: function() {
+        initialize() {
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
 
             this.$box.$userKey = this.$box.find("input.userKey");
@@ -827,7 +827,7 @@ const csde = (function csdeMaster() {
             });
         },
 
-        updateBox: function() {
+        updateBox() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
 
             if (!this.$box.$userKey.is(':focus')){
@@ -852,7 +852,7 @@ const csde = (function csdeMaster() {
         '</div>',
         padding: 25,
 
-        initialize: function() {
+        initialize() {
             joint.shapes.dialogue.BaseView.prototype.initialize.apply(this, arguments);
 
             this.$box.$note = this.$box.find("textarea");
@@ -870,14 +870,14 @@ const csde = (function csdeMaster() {
             })
         },
 
-        updateBox: function() {
+        updateBox() {
             joint.shapes.dialogue.BaseView.prototype.updateBox.apply(this, arguments);
             this.$box.$note.text(this.model.get('noteText'));
 
             this.updateSize()
         },
 
-        updateSize: function() {
+        updateSize() {
             this.$box.$note.css('height', 'auto');
             this.$box.$note.css('height', this.$box.$note.prop("scrollHeight"));
             this.model.resize(
@@ -886,7 +886,7 @@ const csde = (function csdeMaster() {
             );
         },
 
-        addMagnets: function() { /* Do nothing, we don't want magnets */ }
+        addMagnets() { /* Do nothing, we don't want magnets */ }
     });
 
     joint.shapes.dialogue.Base.define('dialogue.Scene', {
@@ -1005,7 +1005,7 @@ const csde = (function csdeMaster() {
                 '<input type="text" class="value default" value="<%= templateValue %>">' +
             '</div>',
 
-        initialize: function() {
+        initialize() {
             joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
             if (this.model.get('values').length < 1) {
                 this.addChoice();
@@ -1055,7 +1055,7 @@ const csde = (function csdeMaster() {
             '<input type="text" class="value default" value="<%= templateValue %>">' +
         '</div>',
 
-        initialize: function () {
+        initialize () {
             joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
             //this.model.set('userKey', null);
 
@@ -1073,7 +1073,7 @@ const csde = (function csdeMaster() {
             }
         },
 
-        updateBox: function() {
+        updateBox() {
             joint.shapes.dialogue.MultiView.prototype.updateBox.apply(this, arguments);
             if (!this.$box.$userKey.is(':focus')){
                 this.$box.$userKey.val(this.model.get('userKey'));
@@ -1479,7 +1479,7 @@ const csde = (function csdeMaster() {
         // Right click menu.
         $.contextMenu({
             selector: '#context-menu-container',
-            callback: function (itemKey, opt, rootMenu, originalEvent) {
+            callback(itemKey, opt, rootMenu, originalEvent) {
 
                 let pos = {
                     x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
@@ -1549,7 +1549,7 @@ const csde = (function csdeMaster() {
         // Connector drag-off menu.
         $.contextMenu({
             selector: 'div#drop-menu',
-            callback: function (itemKey, opt, rootMenu, originalEvent) {
+            callback(itemKey, opt, rootMenu, originalEvent) {
                 let position = {
                     x: Math.round((opt.$menu.position().left + element.scrollLeft()) / _gridSize) *_gridSize,
                     y: Math.round((opt.$menu.position().top +  element.scrollTop()) / _gridSize) *_gridSize

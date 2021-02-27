@@ -1244,25 +1244,23 @@ const csde = (function csdeMaster() {
 
     async function _CSDEToGraph(jsonObj, graph) {
         notify("Importing CSDE file", "med");
-        //graph.clear();
 
         console.log(`\tVersion: ${jsonObj.version}`);
 
         console.log(`\tTitle: ${jsonObj.title}`);
         _setSceneName(jsonObj.title)
 
-        jsonObj.createdNodes = [];
-        return _CSDEToGraph_CreateNodes(jsonObj, graph);
-        // will link into createLinks as well.
+        const createdNodes = await _CSDEToGraph_CreateNodes(jsonObj.nodes, graph);
+        return _CSDEToGraph_CreateLinks(createdNodes, graph)
     }
 
-    function _CSDEToGraph_CreateNodes(jsonObj, graph) {
-        if (!jsonObj.nodes.length) {
+    function _CSDEToGraph_CreateNodes(nodeList, graph) {
+        if (nodeList.length < 1) {
             // If there are no nodes, do nothing
-            return;
+            return Promise.resolve([])
         }
 
-        let node = jsonObj.nodes.pop();
+        let node = nodeList.pop();
         let newNode = null;
         let values = null;
         switch (node.type) {
@@ -1324,21 +1322,13 @@ const csde = (function csdeMaster() {
                 break;
         }
     
-        jsonObj.createdNodes.push(node);
-
         return new Promise(resolve => {
-            if (jsonObj.nodes.length > 0) {
-                // If there's more nodes to add to the graph, do so later. This way we don't block this thread.
-                window.setImmediate(() => {
-                    _CSDEToGraph_CreateNodes(jsonObj, graph).then(resolve);
-                });
-            } else {
-                window.setImmediate(() => {
-                    _CSDEToGraph_CreateLinks(jsonObj.createdNodes, graph).then(resolve);
-                });
-            }
+            window.setImmediate(async () => {
+                const processedList = await _CSDEToGraph_CreateNodes(nodeList, graph)
+                processedList.push(node)
+                resolve(processedList)
+            })
         })
-        // return newNode;
     }
 
     function _CSDEToGraph_CreateLinks(nodelist, graph) {

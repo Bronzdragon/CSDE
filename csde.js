@@ -59,9 +59,9 @@ const csde = (function csdeMaster() {
 
         // 1: Move the current scene file to a back-up location (if it exists).
         if(await _fileExists(path.join(sceneFolder, `${title}${SETTINGS.fileExtension}`))){
-            console.log("Found! Moving...")
+            // console.log("Found! Moving...")
             await _moveFile(sceneFolder, path.join(sceneFolder, RECYCLE_BIN_NAME), `${title}${SETTINGS.fileExtension}`, `${title}-${_generateId(6, '')}${SETTINGS.fileExtension}`)
-            console.log("Moved!")
+            // console.log("Moved!")
         } else {
             console.log("Not found. That's fine.")
         }
@@ -1146,6 +1146,10 @@ const csde = (function csdeMaster() {
     	if (magnetSource == magnetTarget || cellViewSource == cellViewTarget)
     		return false;
 
+        // If we're draging away into empty space, that is allowed.
+        if(!magnetTarget || !magnetSource)
+            return true
+
         // Prevent inputs/outputs from linking to themselves
         let targetType = magnetTarget.getAttribute("class").includes("output") ? "output" : "input";
         if (magnetSource.getAttribute('port-group') === targetType)
@@ -1386,7 +1390,7 @@ const csde = (function csdeMaster() {
 
         function getNextId() {
             console.log("Generating id!")
-            if(!this.nodeIdCounter) this.nodeIdCounter = 0
+            this.nodeIdCounter ??= 0
             return (nodeIdCounter++).toString(36).padStart(4, "0")
         }
         getNextId.nodeIdCounter = 0;
@@ -1893,6 +1897,10 @@ const csde = (function csdeMaster() {
             const link = cellView.model;
             const portId = link.source().port;
             const origin = link.getSourceElement();
+            
+            if(!origin) // We've got a loose link, so skip the dropdown.
+                return;
+
             const originType = origin.getPort(portId).group;
 
             _globalLinkValue = {
@@ -1979,8 +1987,8 @@ const csde = (function csdeMaster() {
 
 
         const filePath = path.join(backupLocation, autoOpenFileName);
-        console.log("Opening ", filePath)
-        _readFromFile(path.join(backupLocation, autoOpenFileName))
+        notify(`Opening ${filePath}`)
+        _readFromFile(filePath)
             .then(data => _CSDEToGraph(data, _graph));
 
         /* Enable autosave */
@@ -1992,7 +2000,7 @@ const csde = (function csdeMaster() {
         if ($.type(message) !== "string" || $.type(priority) !== "string") return;
         if (!["low", "med", "high"].includes(priority)) return;
 
-        console.log("Notification: " + message);
+        (priority === "high" ? console.error : console.log)("Notification: " + message)
 
         let timeoutDuration = 0;
 

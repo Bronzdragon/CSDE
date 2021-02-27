@@ -8,7 +8,6 @@ const { FindInPage } = require('electron-find');
 const SETTINGS = require('./settings.json');
 const Autosaver = require('./modules/autosave')
 
-
 const csde = (function csdeMaster() {
     const RECYCLE_BIN_NAME = SETTINGS.recybleBinFolderName
     let _currentSceneName = '';
@@ -326,14 +325,13 @@ const csde = (function csdeMaster() {
             this.$box.css({
                 width: bbox.width, height: bbox.height,
                 left: bbox.x, top: bbox.y,
-                transform: `rotate(${this.model.get('angle') || 0}deg)`
+                transform: `rotate(${this.model.get('angle') ?? 0}deg)`
             });
 
             for (let port of this.model.getPorts()) {
-                /*jshint loopfunc: true */
-                let hasLinks =_graph.getConnectedLinks(this.model).some(link => {
-                    return link.get('source').port === port.id || link.get('target').port === port.id;
-                });
+                let hasLinks =_graph
+                    .getConnectedLinks(this.model)
+                    .some(link => link.get('source').port === port.id || link.get('target').port === port.id);
 
                 if (hasLinks){
                     $(`[port='${port.id}']`).addClass("connected-magnet");
@@ -1685,6 +1683,16 @@ const csde = (function csdeMaster() {
                 event.preventDefault();
             }
 
+            /* Copy */
+            if (event.ctrlKey && event.key === 'c') {
+                notify("You've pasted!", 'low')
+            }
+            
+            /* Paste */
+            if (event.ctrlKey && event.key === 'v') {
+                notify("You've pasted!", 'low')
+            }
+
             /* Find */
             if (event.ctrlKey && event.key === 'f') {
                 console.log("Opening find dialogue")
@@ -1706,23 +1714,17 @@ const csde = (function csdeMaster() {
             if (event.ctrlKey && event.key === '0') {
                 webFrame.setZoomLevel(0);
             }
-        });
-
-        const scrollHandler = (event, x, y, delta) => {
+        });        
+        
+        const scrollHandler = (event, delta) => {
             if(event.ctrlKey){
                 // Delta is either -1 or +1, so this works out!
                 webFrame.setZoomLevel(webFrame.getZoomLevel() + delta);
             }
         };
-        const scrollCellHandler = (cellView, evt, x, y, delta) => {
-            if(evt.ctrlKey){
-                // Delta is either -1 or +1, so this works out!
-                webFrame.setZoomLevel(webFrame.getZoomLevel() + delta);
-            }
-        };
-
-        paper.on("cell:mousewheel", scrollCellHandler);
-        paper.on("blank:mousewheel", scrollHandler);
+        
+        paper.on("cell:mousewheel", (event, x, y, delta) => scrollHandler(event, delta));
+        paper.on("blank:mousewheel", (cellView, event, x, y, delta) => scrollHandler(event, delta));
     }
 
     function _getSavefileName(randomized = false) {

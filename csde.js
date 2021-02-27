@@ -1,7 +1,3 @@
-/* jshint esversion: 6 */
-let _userAgent = navigator.userAgent.toLowerCase();
-let _isElectron = _userAgent.indexOf(' electron/') > -1;
-
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -1090,11 +1086,6 @@ const csde = (function csdeMaster() {
         return prefix + seed.slice(0, length);
     }
 
-    function _pad(baseString, width, padSymbol = '0') {
-      baseString += '';
-      return baseString.length >= width ? baseString : new Array(width - baseString.length + 1).join(padSymbol) + baseString;
-    }
-
     function _testImage(url, timeout = 5000) {
         return new Promise(function (resolve, reject) {
             const timer = setTimeout(function () {
@@ -1393,10 +1384,15 @@ const csde = (function csdeMaster() {
         const nodes = [];
         const newIds = new Map();
 
-        let nodeIdCounter = 0;
+        function getNextId() {
+            console.log("Generating id!")
+            if(!this.nodeIdCounter) this.nodeIdCounter = 0
+            return (nodeIdCounter++).toString(36).padStart(4, "0")
+        }
+        getNextId.nodeIdCounter = 0;
+
         for (let element of _graph.getElements()) {
-            newIds.set(element.id, _pad(nodeIdCounter.toString(36), 4));
-            nodeIdCounter++;
+            newIds.set(element.id, getNextId());
         }
 
         for (let element of _graph.getElements()) {

@@ -21,6 +21,7 @@ function createWindow() {
         webPreferences: {
             spellcheck: true,
             nodeIntegration: true,
+            enableRemoteModule: true,
         },
         show: true,
     });

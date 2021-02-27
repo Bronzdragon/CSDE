@@ -4,7 +4,7 @@
   "description": "A testing package for personal use only.",
   "main": "main.js",
   "dependencies": {
-    "electron": "^9.4.0",
+    "electron": "^11.3.0",
     "electron-find": "^1.0.6",
     "jointjs": "^3.3.0",
     "jquery": "^3.3.1",
@@ -14,8 +14,8 @@
     "node-vibrant": "^3.1.6"
   },
   "devDependencies": {
-    "electron-debug": "^2.0.0",
     "chai": "^4.1.2",
+    "electron-debug": "^2.0.0",
     "mocha": "^5.2.0"
   },
   "scripts": {

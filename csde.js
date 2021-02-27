@@ -1108,35 +1108,38 @@ const csde = (function csdeMaster() {
     }
 
     function _getCharacterColour(character) {
-        if (!character.promise) { // On cache miss.
-            character.promise = new Promise((resolve, reject) => {
-                if(character.color){
-                    resolve(character.color)
-                }
-
-                const DEFAULTCOLOUR = {hue: 0, saturation: 0, lightness: 70};
-                const imageURL = `.\\images\\characters\\${character.url}`;
-                _testImage(imageURL).catch(error => {
-                    resolve(DEFAULTCOLOUR);
-                }).then(() => {
-                    Vibrant.from(imageURL).getPalette().then(palette => {
-                        let colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
-                        let hsl;
-
-                        if (!colour) { // Default colour in case we messed up.
-                            hsl = DEFAULTCOLOUR;
-                        } else {
-                            hsl = {hue: colour.getHsl()[0] * 360, saturation: colour.getHsl()[1] * 100, lightness: colour.getHsl()[2] * 100};
-                            hsl.saturation = hsl.saturation * 0.80;
-                            hsl.lightness = hsl.lightness * 0.60 + 30;
-                        }
-                        resolve(hsl);
-                    });
-                });
-            });
+        if (character.promise) { // On cache hit.
+            return character.promise;
         }
 
-        return character.promise;
+        return character.promise = new Promise((resolve, reject) => {
+            if(character.color){
+                resolve(character.color)
+            }
+
+            const DEFAULTCOLOUR = {hue: 0, saturation: 0, lightness: 70};
+            const imageURL = `.\\images\\characters\\${character.url}`;
+            _testImage(imageURL)
+            .catch(error => {
+                notify(`An error occured getting the pallet for '${character.name}':\n` + error, "high")
+                resolve(DEFAULTCOLOUR)
+            })
+            .then(() => Vibrant.from(imageURL).getPalette())
+            .then(palette => {
+                let colour = palette.DarkVibrant || palette.Vibrant || palette.DarkMuted  ||palette.Muted || palette.lightVibrant || palette.lightMuted;
+
+                if (!colour) { // Default colour in case we messed up.
+                    resolve(DEFAULTCOLOUR);
+                }
+                let [hue, saturation, lightness] = colour.getHsl()
+
+                hue *= 360
+                saturation *= 100 * 0.80;
+                lightness *= 100 * 0.60 + 30;
+
+                resolve({ hue, saturation, lightness });
+            });
+        });
     }
 
     function _validateConnection(cellViewSource, magnetSource, cellViewTarget, magnetTarget, end, linkView) {
@@ -1715,7 +1718,7 @@ const csde = (function csdeMaster() {
                 webFrame.setZoomLevel(0);
             }
         });        
-        
+
         const scrollHandler = (event, delta) => {
             if(event.ctrlKey){
                 // Delta is either -1 or +1, so this works out!

@@ -2,7 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const mkdirp = require('mkdirp');
-const { webFrame, remote } = require('electron');
+const { webFrame, remote, clipboard } = require('electron');
 const { dialog } = remote
 const { FindInPage } = require('electron-find');
 const SETTINGS = require('./settings.json');
@@ -1371,6 +1371,10 @@ const csde = (function csdeMaster() {
     }
 
     function _graphToCSDE() {
+        return _elementsToCSDE(_graph.getElements())
+    }
+
+    function _elementsToCSDE(elements) {
         const _remapConnections = obj => ({
             id: newIds.get(obj.id) || null,
             text: obj.text
@@ -1386,11 +1390,11 @@ const csde = (function csdeMaster() {
         }
         getNextId.nodeIdCounter = 0;
 
-        for (let element of _graph.getElements()) {
+        for (let element of elements) {
             newIds.set(element.id, getNextId());
         }
 
-        for (let element of _graph.getElements()) {
+        for (let element of elements) {
             let node = {
                 id: newIds.get(element.id),
                 type: element.get("type"),
@@ -1672,13 +1676,17 @@ const csde = (function csdeMaster() {
             if (event.ctrlKey && event.key === 's') {
                 const shouldSaveScene = Boolean(_currentSceneName);
                 _saveBackups(shouldSaveScene);
-
-                event.preventDefault();
+                return;
             }
 
             /* Copy */
             if (event.ctrlKey && event.key === 'c') {
-                notify("You've pasted!", 'low')
+                notify("You've copied!", 'low')
+                if(_selectedNodes.size < 1) {
+                    notify("\tWhups, no items selected.", 'low')
+                    return;
+                }
+                clipboard.writeText(_elementsToCSDE(_selectedNodes))
             }
             
             /* Paste */
@@ -1688,24 +1696,22 @@ const csde = (function csdeMaster() {
 
             /* Find */
             if (event.ctrlKey && event.key === 'f') {
-                console.log("Opening find dialogue")
-                findInPage.openFindWindow()
+                return findInPage.openFindWindow()
             }
             
             /* Zoom in */
             if (event.ctrlKey && (event.key === '=' || event.key === '+')) {
-                webFrame.setZoomLevel(webFrame.getZoomLevel() + 1);
+                return webFrame.setZoomLevel(webFrame.getZoomLevel() + 1);
             }
 
             /* Zoom out */
             if (event.ctrlKey && event.key === '-') {
-                webFrame.setZoomLevel(webFrame.getZoomLevel() - 1);
-
+                return webFrame.setZoomLevel(webFrame.getZoomLevel() - 1);
             }
 
             /* Reset zoom */
             if (event.ctrlKey && event.key === '0') {
-                webFrame.setZoomLevel(0);
+                return webFrame.setZoomLevel(0);
             }
         });        
 

@@ -20,7 +20,8 @@ const csde = (function csdeMaster() {
     let _characters = getDefaultCharacterList();
     let _mouseObj = {
         panning: false,
-        position: { x: 0, y: 0 }
+        position: { x: 0, y: 0 },
+        pointer: { x: 0, y: 0},
     };
 
     async function _saveBackups(backupScene = false) {
@@ -1638,6 +1639,9 @@ const csde = (function csdeMaster() {
         });
 
         element.mousemove(event => {
+            _mouseObj.pointer.x = element.scrollLeft() + event.offsetX
+            _mouseObj.pointer.y = element.scrollTop() + event.offsetY
+
             if (!_mouseObj.panning) return;
 
             element.scrollLeft(element.scrollLeft() + _mouseObj.position.x - event.pageX);
@@ -1669,7 +1673,10 @@ const csde = (function csdeMaster() {
                     notify("\tWhups, no items selected.", 'low')
                     return;
                 }
-                clipboard.writeText(JSON.stringify(_elementsToCSDE(_selectedNodes)))
+                const csdeProject = _elementsToCSDE(_selectedNodes)
+                csdeProject.nodes = _normalizeCSDENodeLocations(csdeProject.nodes);
+
+                clipboard.writeText(JSON.stringify(csdeProject))
             }
             
             /* Paste */
@@ -1687,7 +1694,7 @@ const csde = (function csdeMaster() {
                     return;
                 }
 
-                _CSDEToGraph_CreateNodes(project.nodes, _graph, {x: 100, y: 100})
+                _CSDEToGraph_CreateNodes(project.nodes, _graph, _mouseObj.pointer)
                     .then(nodes => _CSDEToGraph_CreateLinks(nodes, _graph))
             }
 
@@ -1731,6 +1738,19 @@ const csde = (function csdeMaster() {
             return `csde${fileExtension}`;
 
         }
+    }
+
+    function _normalizeCSDENodeLocations(nodes) {
+        const lowestX = Math.min(...nodes.map(node => node.position.x))
+        const lowestY = Math.min(...nodes.map(node => node.position.y))
+
+        return nodes.map(node => ({
+            ...node,
+            position: {
+                x: node.position.x - lowestX,
+                y: node.position.y - lowestY
+            }
+        }))
     }
 
     function _getSavefileLocation(filename = '') {

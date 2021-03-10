@@ -49,23 +49,15 @@ const csde = (function csdeMaster() {
     }
 
     async function _saveScene(dataObject) {
-        console.log("SaveScenes called...")
         const sceneFolder = path.join(process.cwd(), SETTINGS.sceneFolder);
         const dataText = JSON.stringify(dataObject);
         const { title }  = dataObject
 
-        console.log(`About to check if ${title}${SETTINGS.fileExtension} exists...`)
-
         // 1: Move the current scene file to a back-up location (if it exists).
         if(await _fileExists(path.join(sceneFolder, `${title}${SETTINGS.fileExtension}`))){
-            // console.log("Found! Moving...")
             await _moveFile(sceneFolder, path.join(sceneFolder, RECYCLE_BIN_NAME), `${title}${SETTINGS.fileExtension}`, `${title}-${_generateId(6, '')}${SETTINGS.fileExtension}`)
-            // console.log("Moved!")
-        } else {
-            console.log("Not found. That's fine.")
         }
 
-        console.log("Ok, going to write out our file: ", {folder: sceneFolder, name: `${title}${SETTINGS.fileExtension}`});
         // 2: Now save our current scene
         await _writeToFile(sceneFolder, `${title}${SETTINGS.fileExtension}`, dataText);
     }
@@ -162,7 +154,6 @@ const csde = (function csdeMaster() {
      function _trashOldFiles(folder, count = 0) {
         if (count <= 0) return;
 
-        console.info(`Cleaning files in '${folder}'.`);
         return new Promise((resolve, reject) => {
             fs.readdir(folder, { withFileTypes: true }, async (err, files) => {
                 if (err) {
@@ -495,7 +486,6 @@ const csde = (function csdeMaster() {
                 let values = this.model.get('values');
                 let index = values.findIndex(obj => obj.id === $newChoice.attr('id'));
                 values[index].value = $(event.target).val();
-                //values.set($newChoice.attr('id'), $(event.target).val());
                 this.model.set('values', values);
             });
 
@@ -506,7 +496,6 @@ const csde = (function csdeMaster() {
                     let values = this.model.get('values');
                     let index = values.findIndex(obj => obj.id === $newChoice.attr('id'));
                     values.splice(index, 1);
-                    //values.delete($newChoice.attr('id'));
                     this.model.set('values', values);
                     this.updateBox();
                 });
@@ -1051,7 +1040,6 @@ const csde = (function csdeMaster() {
 
         initialize () {
             joint.shapes.dialogue.MultiView.prototype.initialize.apply(this, arguments);
-            //this.model.set('userKey', null);
 
             this.$box.$userKey = this.$box.find("input.userKey");
 
@@ -1245,9 +1233,6 @@ const csde = (function csdeMaster() {
     async function _CSDEToGraph(jsonObj, graph) {
         notify("Importing CSDE file", "med");
 
-        console.log(`\tVersion: ${jsonObj.version}`);
-
-        console.log(`\tTitle: ${jsonObj.title}`);
         _setSceneName(jsonObj.title)
 
         const createdNodes = await _CSDEToGraph_CreateNodes(jsonObj.nodes, graph);
@@ -1264,21 +1249,21 @@ const csde = (function csdeMaster() {
         let newNode = null;
         let values = null;
         switch (node.type) {
-            case "dialogue.Text":
+            case "dialogue.Text": // General text node.
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Text, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id,
                     actor: node.actor,
                     speech: node.text
                 });
                 break;
-            case "dialogue.Set":
+            case "dialogue.Set": // Set variable
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Set, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id,
                     userKey: node.key,
                     userValue: node.value
                 });
                 break;
-            case "dialogue.Branch":
+            case "dialogue.Branch": // Branching narative based on previously chosen variables
                 let firstChoice = true;
                 values = [];
                 for (let element of node.outbound) {
@@ -1292,7 +1277,7 @@ const csde = (function csdeMaster() {
                 });
 
                 break;
-            case "dialogue.Choice":
+            case "dialogue.Choice": // User choice
                 values = [];
                 for (let element of node.outbound) {
                     values.push({id: element.id || _generateId(), value: element.text, isDefault: false});
@@ -1303,13 +1288,13 @@ const csde = (function csdeMaster() {
                     values: values
                 });
                 break;
-            case "dialogue.Note": //comment
+            case "dialogue.Note": // Comment node
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Note, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id,
                     noteText: node.text
                 });
                 break;
-            case "dialogue.Scene": // Scene node
+            case "dialogue.Scene": // Scene switching node
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Scene, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id,
                     url: node.url
@@ -1345,7 +1330,7 @@ const csde = (function csdeMaster() {
             let outboundPort = graph.getCell(outboundId).getPorts().find(element => element.group === "input").id;
 
             if (["dialogue.Text", "dialogue.Set", "dialogue.Start"].includes(node.type)){
-                // ??? Why are these two different?
+                // ??? Why are these three different?
                 inboundPort = graph.getCell(inboundId).getPorts().find(element => element.group === "output").id;
             } else {
                 inboundPort = link.id;
@@ -1384,7 +1369,6 @@ const csde = (function csdeMaster() {
         const newIds = new Map();
 
         function getNextId() {
-            console.log("Generating id!")
             this.nodeIdCounter ??= 0
             return (nodeIdCounter++).toString(36).padStart(4, "0")
         }
@@ -1681,7 +1665,6 @@ const csde = (function csdeMaster() {
 
             /* Copy */
             if (event.ctrlKey && event.key === 'c') {
-                // notify("You've copied!", 'low')
                 if(_selectedNodes.size < 1) {
                     notify("\tWhups, no items selected.", 'low')
                     return;
@@ -1691,10 +1674,7 @@ const csde = (function csdeMaster() {
             
             /* Paste */
             if (event.ctrlKey && event.key === 'v') {
-                // notify("You've pasted!", 'low')
                 const jsonText = clipboard.readText("clipboard")
-                // console.log(clipboard.availableFormats())
-                // console.log(jsonText)
 
                 let project = null
                 try {
@@ -1707,12 +1687,8 @@ const csde = (function csdeMaster() {
                     return;
                 }
 
-                // console.log("Creating nodes... ", project)
                 _CSDEToGraph_CreateNodes(project.nodes, _graph, {x: 100, y: 100})
                     .then(nodes => _CSDEToGraph_CreateLinks(nodes, _graph))
-                // console.log("Created...", )
-                // console.log("With links...", _CSDEToGraph_CreateLinks(project.nodes))
-
             }
 
             /* Find */
@@ -1978,9 +1954,6 @@ const csde = (function csdeMaster() {
             _handleFile(file);
         });
         
-        // _paper.on('cell:pointerclick', function(cellView) {
-        //     cellView.highlight();
-        // });
 
         const scenenameTextbox = $("#filename-textbox")
         const scenenameSaveButton = $("#filename-button")

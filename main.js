@@ -22,6 +22,7 @@ function createWindow() {
             spellcheck: true,
             nodeIntegration: true,
             enableRemoteModule: true,
+            contextIsolation: false // required for access to the Node API.
         },
         show: true,
     });

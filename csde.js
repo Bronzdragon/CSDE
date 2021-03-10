@@ -1686,7 +1686,7 @@ const csde = (function csdeMaster() {
                     notify("\tWhups, no items selected.", 'low')
                     return;
                 }
-                clipboard.writeText(_elementsToCSDE(_selectedNodes))
+                clipboard.writeText(JSON.stringify(_elementsToCSDE(_selectedNodes)))
             }
             
             /* Paste */

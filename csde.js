@@ -1254,7 +1254,7 @@ const csde = (function csdeMaster() {
         return _CSDEToGraph_CreateLinks(createdNodes, graph)
     }
 
-    function _CSDEToGraph_CreateNodes(nodeList, graph) {
+    function _CSDEToGraph_CreateNodes(nodeList, graph, {x: x = 0, y: y = 0} = {}) {
         if (nodeList.length < 1) {
             // If there are no nodes, do nothing
             return Promise.resolve([])
@@ -1265,14 +1265,14 @@ const csde = (function csdeMaster() {
         let values = null;
         switch (node.type) {
             case "dialogue.Text":
-                newNode = _addNodeToGraph(joint.shapes.dialogue.Text, node.position, {
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Text, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id,
                     actor: node.actor,
                     speech: node.text
                 });
                 break;
             case "dialogue.Set":
-                newNode = _addNodeToGraph(joint.shapes.dialogue.Set, node.position, {
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Set, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id,
                     userKey: node.key,
                     userValue: node.value
@@ -1285,7 +1285,7 @@ const csde = (function csdeMaster() {
                     values.push({id: element.id || _generateId(), value: element.text, isDefault: firstChoice});
                     firstChoice = false;
                 }
-                newNode = _addNodeToGraph(joint.shapes.dialogue.Branch, node.position, {
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Branch, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id,
                     userKey: node.key,
                     values: values
@@ -1298,24 +1298,24 @@ const csde = (function csdeMaster() {
                     values.push({id: element.id || _generateId(), value: element.text, isDefault: false});
                 }
 
-                newNode = _addNodeToGraph(joint.shapes.dialogue.Choice, node.position, {
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Choice, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id,
                     values: values
                 });
                 break;
             case "dialogue.Note": //comment
-                newNode = _addNodeToGraph(joint.shapes.dialogue.Note, node.position, {
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Note, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id,
                     noteText: node.text
                 });
                 break;
             case "dialogue.Scene": // Scene node
-                newNode = _addNodeToGraph(joint.shapes.dialogue.Scene, node.position, {
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Scene, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id,
                     url: node.url
                 });
             case "dialogue.Start": // Start node
-                newNode = _addNodeToGraph(joint.shapes.dialogue.Start, node.position, {
+                newNode = _addNodeToGraph(joint.shapes.dialogue.Start, {x: x + node.position.x, y: y + node.position.y}, {
                     id: node.id
                 })
             default:
@@ -1324,7 +1324,7 @@ const csde = (function csdeMaster() {
     
         return new Promise(resolve => {
             window.setImmediate(async () => {
-                const processedList = await _CSDEToGraph_CreateNodes(nodeList, graph)
+                const processedList = await _CSDEToGraph_CreateNodes(nodeList, graph, {x, y})
                 processedList.push(node)
                 resolve(processedList)
             })
@@ -1681,7 +1681,7 @@ const csde = (function csdeMaster() {
 
             /* Copy */
             if (event.ctrlKey && event.key === 'c') {
-                notify("You've copied!", 'low')
+                // notify("You've copied!", 'low')
                 if(_selectedNodes.size < 1) {
                     notify("\tWhups, no items selected.", 'low')
                     return;
@@ -1691,7 +1691,28 @@ const csde = (function csdeMaster() {
             
             /* Paste */
             if (event.ctrlKey && event.key === 'v') {
-                notify("You've pasted!", 'low')
+                // notify("You've pasted!", 'low')
+                const jsonText = clipboard.readText("clipboard")
+                // console.log(clipboard.availableFormats())
+                // console.log(jsonText)
+
+                let project = null
+                try {
+                    project = JSON.parse(jsonText)
+                } catch (e) {
+                    console.error(e)
+                    return; // Not valid JSON
+                }
+                if(!Array.isArray(project.nodes)){
+                    return;
+                }
+
+                // console.log("Creating nodes... ", project)
+                _CSDEToGraph_CreateNodes(project.nodes, _graph, {x: 100, y: 100})
+                    .then(nodes => _CSDEToGraph_CreateLinks(nodes, _graph))
+                // console.log("Created...", )
+                // console.log("With links...", _CSDEToGraph_CreateLinks(project.nodes))
+
             }
 
             /* Find */

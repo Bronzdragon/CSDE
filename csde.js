@@ -1231,7 +1231,7 @@ const csde = (function csdeMaster() {
         return outbound;
     }
 
-    async function _CSDEToGraph(jsonObj, graph, nodesOnly = false) {
+    async function _CSDEToGraph(jsonObj, graph, nodesOnly = false, offset = {x = 0, y = 0} = {}) {
         notify("Importing CSDE file", "med");
 
         if(!nodesOnly) {
@@ -1240,11 +1240,11 @@ const csde = (function csdeMaster() {
 
         const idList = new Set(_graph.getElements().map(({id}) => id));
 
-        const createdNodes = await _CSDEToGraph_CreateNodes(jsonObj.nodes, idList);
+        const createdNodes = await _CSDEToGraph_CreateNodes(jsonObj.nodes, idList, offset);
         return _CSDEToGraph_CreateLinks(createdNodes, graph)
     }
 
-    function _CSDEToGraph_CreateNodes(nodeList, idList, {x: x = 0, y: y = 0} = {}) {
+    function _CSDEToGraph_CreateNodes(nodeList, idList, {x = 0, y = 0} = {}) {
         if (nodeList.length < 1) {
             // If there are no nodes, do nothing
             return Promise.resolve([])
@@ -1652,8 +1652,8 @@ const csde = (function csdeMaster() {
         });
 
         element.mousemove(event => {
-            _mouseObj.pointer.x = element.scrollLeft() + event.offsetX
-            _mouseObj.pointer.y = element.scrollTop() + event.offsetY
+            _mouseObj.pointer.x = event.offsetX
+            _mouseObj.pointer.y = event.offsetY
 
             if (!_mouseObj.panning) return;
 
@@ -1706,7 +1706,7 @@ const csde = (function csdeMaster() {
                 if(!Array.isArray(project.nodes)){
                     return;
                 }
-                _CSDEToGraph(project, _graph, true)
+                _CSDEToGraph(project, _graph, true, _mouseObj.pointer)
             }
 
             /* Find */

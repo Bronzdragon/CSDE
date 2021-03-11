@@ -1239,8 +1239,12 @@ const csde = (function csdeMaster() {
         }
 
         const idList = new Set(_graph.getElements().map(({id}) => id));
+        console.log("ID list before: ", idList)
 
         const createdNodes = await _CSDEToGraph_CreateNodes(jsonObj.nodes, idList, offset);
+
+        console.log("ID list after: ", idList)
+
         return _CSDEToGraph_CreateLinks(createdNodes, graph)
     }
 
@@ -1257,7 +1261,7 @@ const csde = (function csdeMaster() {
 
         // generate a new unused id.
         while(idList.has(id)) {
-            id = _generateId(4)
+            id = _generateId(4, "")
         }
 
         idList.add(id);
@@ -1265,16 +1269,16 @@ const csde = (function csdeMaster() {
         switch (node.type) {
             case "dialogue.Text": // General text node.
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Text, {x: x + node.position.x, y: y + node.position.y}, {
-                    id: node.id,
+                    id,
                     actor: node.actor,
-                    speech: node.text
+                    speech: node.text,
                 });
                 break;
             case "dialogue.Set": // Set variable
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Set, {x: x + node.position.x, y: y + node.position.y}, {
-                    id: node.id,
+                    id,
                     userKey: node.key,
-                    userValue: node.value
+                    userValue: node.value,
                 });
                 break;
             case "dialogue.Branch": // Branching narative based on previously chosen variables
@@ -1285,9 +1289,9 @@ const csde = (function csdeMaster() {
                     firstChoice = false;
                 }
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Branch, {x: x + node.position.x, y: y + node.position.y}, {
-                    id: node.id,
+                    id,
                     userKey: node.key,
-                    values: values
+                    values: values,
                 });
 
                 break;
@@ -1298,24 +1302,24 @@ const csde = (function csdeMaster() {
                 }
 
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Choice, {x: x + node.position.x, y: y + node.position.y}, {
-                    id: node.id,
-                    values: values
+                    id,
+                    values: values,
                 });
                 break;
             case "dialogue.Note": // Comment node
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Note, {x: x + node.position.x, y: y + node.position.y}, {
-                    id: node.id,
-                    noteText: node.text
+                    id,
+                    noteText: node.text,
                 });
                 break;
             case "dialogue.Scene": // Scene switching node
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Scene, {x: x + node.position.x, y: y + node.position.y}, {
-                    id: node.id,
-                    url: node.url
+                    id,
+                    url: node.url,
                 });
             case "dialogue.Start": // Start node
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Start, {x: x + node.position.x, y: y + node.position.y}, {
-                    id: node.id
+                    id,
                 })
             default:
                 break;
@@ -1695,6 +1699,7 @@ const csde = (function csdeMaster() {
             /* Paste */
             if (event.ctrlKey && event.key === 'v') {
                 const jsonText = clipboard.readText("clipboard")
+                console.log(jsonText)
 
                 let project = null
                 try {
@@ -1706,6 +1711,7 @@ const csde = (function csdeMaster() {
                 if(!Array.isArray(project.nodes)){
                     return;
                 }
+
                 _CSDEToGraph(project, _graph, true, _mouseObj.pointer)
             }
 

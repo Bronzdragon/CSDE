@@ -1231,16 +1231,20 @@ const csde = (function csdeMaster() {
         return outbound;
     }
 
-    async function _CSDEToGraph(jsonObj, graph) {
+    async function _CSDEToGraph(jsonObj, graph, nodesOnly = false) {
         notify("Importing CSDE file", "med");
 
-        _setSceneName(jsonObj.title)
+        if(!nodesOnly) {
+            _setSceneName(jsonObj.title)
+        }
 
-        const createdNodes = await _CSDEToGraph_CreateNodes(jsonObj.nodes, graph);
+        const idList = new Set(_graph.getElements().map(({id}) => id));
+
+        const createdNodes = await _CSDEToGraph_CreateNodes(jsonObj.nodes, idList);
         return _CSDEToGraph_CreateLinks(createdNodes, graph)
     }
 
-    function _CSDEToGraph_CreateNodes(nodeList, graph, {x: x = 0, y: y = 0} = {}) {
+    function _CSDEToGraph_CreateNodes(nodeList, idList, {x: x = 0, y: y = 0} = {}) {
         if (nodeList.length < 1) {
             // If there are no nodes, do nothing
             return Promise.resolve([])
@@ -1249,6 +1253,15 @@ const csde = (function csdeMaster() {
         let node = nodeList.pop();
         let newNode = null;
         let values = null;
+        let id = node.id
+
+        // generate a new unused id.
+        while(idList.has(id)) {
+            id = _generateId(4)
+        }
+
+        idList.add(id);
+
         switch (node.type) {
             case "dialogue.Text": // General text node.
                 newNode = _addNodeToGraph(joint.shapes.dialogue.Text, {x: x + node.position.x, y: y + node.position.y}, {
@@ -1310,7 +1323,7 @@ const csde = (function csdeMaster() {
     
         return new Promise(resolve => {
             window.setImmediate(async () => {
-                const processedList = await _CSDEToGraph_CreateNodes(nodeList, graph, {x, y})
+                const processedList = await _CSDEToGraph_CreateNodes(nodeList, idList, {x, y})
                 processedList.push(node)
                 resolve(processedList)
             })
@@ -1693,9 +1706,7 @@ const csde = (function csdeMaster() {
                 if(!Array.isArray(project.nodes)){
                     return;
                 }
-
-                _CSDEToGraph_CreateNodes(project.nodes, _graph, _mouseObj.pointer)
-                    .then(nodes => _CSDEToGraph_CreateLinks(nodes, _graph))
+                _CSDEToGraph(project, _graph, true)
             }
 
             /* Find */

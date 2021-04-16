@@ -94,7 +94,7 @@ const csde = (function csdeMaster() {
         const data = await _readFromFile(filePath);
         if(data){
             // 4: Generate nodes & links.
-            await _CSDEToGraph(data, _graph);
+            return _CSDEToGraph(data, _graph);
         } else {
             _setSceneName("");
         }
@@ -1713,6 +1713,7 @@ const csde = (function csdeMaster() {
                 }
 
                 _CSDEToGraph(project, _graph, true, _mouseObj.pointer)
+                    .catch(error => notify(`Error while pasting: (${error})`, "high"))
             }
 
             /* Find */
@@ -2021,7 +2022,12 @@ const csde = (function csdeMaster() {
         const filePath = path.join(backupLocation, autoOpenFileName);
         notify(`Opening ${filePath}`)
         _readFromFile(filePath)
-            .then(data => _CSDEToGraph(data, _graph));
+            .then(data => _CSDEToGraph(data, _graph))
+            .catch(error => {
+                notify(error, "high")
+                _clearGraph();
+            });
+        
 
         /* Enable autosave */
         autosave.start();
@@ -2029,7 +2035,7 @@ const csde = (function csdeMaster() {
 
     function notify(message, priority = "low") {
         if (!message) return;
-        if ($.type(message) !== "string" || $.type(priority) !== "string") return;
+        if (typeof message !== "string" || typeof priority !== "string") return;
         if (!["low", "med", "high"].includes(priority)) return;
 
         (priority === "high" ? console.error : console.log)("Notification: " + message)

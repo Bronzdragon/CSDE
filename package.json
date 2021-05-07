@@ -9,7 +9,7 @@
     "jointjs": "^3.3.0",
     "jquery": "^3.3.1",
     "jquery-contextmenu": "^2.6.4",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "mkdirp": "^0.5.1",
     "node-vibrant": "^3.1.6"
   },
